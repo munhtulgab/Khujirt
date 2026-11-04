@@ -1,0 +1,18 @@
+[project]
+name = "khujirt-api"
+version = "1.0.0"
+description = "Khujirt API: Python Cloudflare Worker with a D1 database"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "workers-py",
+  "workers-runtime-sdk",
+  "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

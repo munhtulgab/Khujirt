@@ -1,0 +1,179 @@
+@import "tailwindcss";
+
+/* Khujirt brand tokens, taken from the logo: red wordmark, navy stag, sky-blue type, green leaf, snow white. */
+@theme {
+  --color-red: #c8202a;
+  --color-red-deep: #a3161f;
+  --color-navy: #0e2f52;
+  --color-navy-2: #1d4e7a;
+  --color-sky: #2f8fd1;
+  --color-sky-200: #cfe8f8;
+  --color-sky-100: #e3f2fb;
+  --color-sky-50: #f2f9fe;
+  --color-leaf: #3ea535;
+  --color-leaf-50: #eaf7e7;
+  --color-ink-soft: #4d6b88;
+
+  --font-display: "Unbounded Variable", "Arial Black", system-ui, sans-serif;
+  --font-body: "Onest Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Cormorant Variable", Georgia, "Times New Roman", serif;
+
+  --ease-water: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+    background: var(--color-sky-50);
+  }
+  body {
+    margin: 0;
+    background: var(--color-sky-50);
+    color: var(--color-navy);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--color-sky) 30%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-sky);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+}
+
+@layer components {
+  /* frosted white glass used by cards and the header */
+  .glass {
+    background: rgb(255 255 255 / 0.62);
+    border: 1px solid rgb(255 255 255 / 0.75);
+    box-shadow: 0 24px 60px -32px rgb(14 47 82 / 0.35);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-sky);
+  }
+  .display-accent {
+    display: block;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-sky);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    padding: 0 24px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    transition: transform 0.3s var(--ease-water), box-shadow 0.3s, background-color 0.3s, color 0.3s;
+  }
+  .btn-red {
+    background: var(--color-red);
+    color: #fff;
+    box-shadow: 0 14px 36px -14px rgb(200 32 42 / 0.6);
+  }
+  .btn-red:hover {
+    background: var(--color-red-deep);
+    transform: translateY(-2px);
+  }
+  .btn-glass {
+    background: rgb(255 255 255 / 0.7);
+    color: var(--color-navy);
+    border: 1px solid rgb(14 47 82 / 0.12);
+  }
+  .btn-glass:hover {
+    background: #fff;
+  }
+  .peak-label {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-navy);
+    white-space: nowrap;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.85);
+    box-shadow: 0 8px 24px -12px rgb(14 47 82 / 0.5);
+    opacity: 0;
+    transition: opacity 0.5s, background-color 0.4s, color 0.4s, scale 0.4s var(--ease-water);
+    will-change: transform;
+    pointer-events: none;
+  }
+  .peak-label[data-active="true"] {
+    background: var(--color-navy);
+    color: #fff;
+    scale: 1.12;
+  }
+
+  /* glassy water bubble for the mineral badges */
+  .mineral-bubble {
+    position: relative;
+    background:
+      radial-gradient(circle at 32% 26%, #fff 0 9%, rgb(255 255 255 / 0.7) 16%, transparent 34%),
+      radial-gradient(circle at 50% 55%, rgb(255 255 255 / 0.55), rgb(207 232 248 / 0.55) 62%, rgb(47 143 209 / 0.32) 100%);
+    border: 1px solid rgb(255 255 255 / 0.9);
+    box-shadow:
+      inset 0 -14px 30px -6px rgb(47 143 209 / 0.3),
+      inset 0 6px 16px rgb(255 255 255 / 0.8),
+      0 24px 50px -30px rgb(14 47 82 / 0.55);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    animation: bubble-bob 6s ease-in-out infinite alternate;
+  }
+
+  .field {
+    width: 100%;
+    border-radius: 18px;
+    border: 1px solid rgb(14 47 82 / 0.14);
+    background: rgb(255 255 255 / 0.82);
+    padding: 14px 16px;
+    font-size: 16px;
+    color: var(--color-navy);
+    transition: border-color 0.25s, box-shadow 0.25s, background-color 0.25s;
+  }
+  .field::placeholder {
+    color: rgb(77 107 136 / 0.7);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--color-sky);
+    background: #fff;
+    box-shadow: 0 0 0 4px rgb(47 143 209 / 0.16);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--color-red);
+  }
+}
+
+@keyframes bubble-bob {
+  from { transform: translateY(-7px); }
+  to { transform: translateY(7px); }
+}
+
+@keyframes scroll-cue {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(260%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

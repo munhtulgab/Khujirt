@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
+
+# environment & secrets
+.env
+.env*.local
+.dev.vars
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+python_modules/
+
+# Cloudflare
+.wrangler/
+
+# OS
+.DS_Store

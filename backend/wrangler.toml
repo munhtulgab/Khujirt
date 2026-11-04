@@ -1,0 +1,24 @@
+name = "khujirt-api"
+main = "src/entry.py"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["python_workers"]
+
+[vars]
+# Browser origins allowed to call POST /api/contact directly (the site normally goes through its own proxy).
+ALLOWED_ORIGINS = "https://khujirt.vercel.app,http://localhost:3000"
+# Contact form: at most CONTACT_RATE_LIMIT messages per visitor per CONTACT_RATE_WINDOW seconds.
+CONTACT_RATE_LIMIT = "5"
+CONTACT_RATE_WINDOW = "3600"
+
+# Secrets (not in this file):
+#   npx wrangler secret put IP_HASH_SALT    # random string used to hash visitor IPs
+#   npx wrangler secret put API_PROXY_KEY   # same value as KHUJIRT_API_PROXY_KEY on Vercel
+
+[[d1_databases]]
+binding = "DB"
+database_name = "khujirt"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID" # from: npx wrangler d1 create khujirt
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
