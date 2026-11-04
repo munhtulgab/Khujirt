@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not "../backend";
 
 /* Khujirt brand tokens, taken from the logo: red wordmark, navy stag, sky-blue type, green leaf, snow white. */
 @theme {

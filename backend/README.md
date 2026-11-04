@@ -61,4 +61,4 @@ npx wrangler d1 execute khujirt --remote --command "UPDATE products SET active =
 npx wrangler d1 execute khujirt --remote --command "SELECT id, name, email, phone, message, datetime(created_at, 'unixepoch') FROM contact_messages ORDER BY id DESC LIMIT 20"
 ```
 
-Сайт бүтээгдэхүүнийг 10 минут тутамд шинэчилнэ (ISR). API ажиллахгүй үед сайт `web/lib/content.ts` доторх нөөц өгөгдлөөр ажилласаар байна.
+Сайт бүтээгдэхүүнийг 10 минут тутамд шинэчилнэ (ISR). API ажиллахгүй үед сайт `lib/content.ts` доторх нөөц өгөгдлөөр ажилласаар байна.

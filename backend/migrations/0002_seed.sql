@@ -1,5 +1,5 @@
 -- Seed data: the Khujirt range as listed on gem.mn (GEM International).
--- Generated from web/lib/content.ts, which is also the site's offline fallback.
+-- Generated from lib/content.ts, which is also the site's offline fallback.
 
 INSERT OR IGNORE INTO products (slug, name_mn, name_en, description_mn, description_en, category, packaging, volumes, image_url, shop_url, sort_order) VALUES ('khujirt', 'Хужирт ус', 'Khujirt Natural Mineral Water', 'Монгол орны цэвэр, байгалийн эрдэст ус.', 'Pure natural mineral water from Mongolia.', 'still', 'pet', '[]', 'https://cdnp.cody.mn/spree/images/2844882/large/Khujirt_pet__0.860.png', 'https://www.gem.mn/mn/products/khujirt', 10);
 INSERT OR IGNORE INTO products (slug, name_mn, name_en, description_mn, description_en, category, packaging, volumes, image_url, shop_url, sort_order) VALUES ('khujirt-bombolog', 'Хужирт хийжүүлсэн ус', 'Khujirt Sparkling', 'Амны цангааг төгс тайлах хийжүүлсэн байгалийн эрдэст ус.', 'Sparkling natural mineral water that perfectly quenches thirst.', 'sparkling', 'pet', '["330 мл","500 мл","1.5 л"]', 'https://cdnp.cody.mn/spree/images/2844877/large/Khujirt_pet_Bumbulugtei_0.3.png', 'https://www.gem.mn/mn/products/khujirt-bombolog', 20);

@@ -2,19 +2,16 @@
 
 Хужирт брэндийн вэб сайт: усан дундаас бүрэлдэх тунгалаг цэнхэр буга, шилэн лонх, нуур, манан нөмөрсөн Шунхлай · Гуа · Шивээт уулс бүхий 3D түүх. Гүйлгэх тусам домог дөрвөн агшинд өрнөнө: шархадсан буга → гурван уулын дундах эх → эдгэрэл → өнөөдөр. Монгол / англи хэлтэй.
 
-![Хужирт](web/public/og/og-mn.jpg)
+![Хужирт](public/og/og-mn.jpg)
 
 ## Бүтэц
 
-```
-khujirt/
-├── web/        Frontend — Next.js 15 (App Router, React 19), Tailwind CSS v4,
-│               Three.js + React Three Fiber + drei, GSAP ScrollTrigger, Lenis
-└── backend/    Backend — Python Cloudflare Worker + D1 өгөгдлийн сан (backend/README.md)
-```
+Frontend нь repo-гийн үндсэн хавтсанд (Next.js 15 App Router, React 19, Tailwind CSS v4,
+Three.js + React Three Fiber + drei, GSAP ScrollTrigger, Lenis), backend нь `backend/` хавтсанд
+(Python Cloudflare Worker + D1, [backend/README.md](backend/README.md)).
 
 ```
-web/
+khujirt/
 ├── app/
 │   ├── [lang]/layout.tsx · page.tsx   /mn, /en хуудас, SEO metadata, JSON-LD
 │   ├── api/contact/route.ts           маягт → Python API proxy
@@ -28,8 +25,9 @@ web/
 │   ├── layout/     Header, Footer, SmoothScroll (Lenis)
 │   └── StoryDriver.tsx                ScrollTrigger → 3D түүхийн timeline
 ├── lib/            i18n.ts (MN/EN текст), content.ts (бүтээгдэхүүн), api.ts, site.ts
-└── public/         models/deer.glb (221 KB, meshopt), models/stag-points.bin,
-                    brand/khujirt-logo.webp, og/ (хуваалцах зураг)
+├── public/         models/deer.glb (221 KB, meshopt), models/stag-points.bin,
+│                   brand/khujirt-logo.webp, og/ (хуваалцах зураг)
+└── backend/        Python API (Cloudflare Worker + D1)
 ```
 
 ## Өнгө
@@ -39,23 +37,23 @@ web/
 ## Локал дээр ажиллуулах
 
 ```bash
-cd web
 npm install
 npm run dev            # http://localhost:3000 → /mn
 npm run build && npm start
 ```
 
-Backend-гүйгээр ч бүрэн ажиллана: бүтээгдэхүүн, тоонууд `web/lib/content.ts`-ээс уншигдана. Холбоо барих маягт API тохируулсны дараа ажиллана.
+Backend-гүйгээр ч бүрэн ажиллана: бүтээгдэхүүн, тоонууд `lib/content.ts`-ээс уншигдана. Холбоо барих маягт API тохируулсны дараа ажиллана.
 
 ## Vercel дээр байршуулах
 
-1. Vercel → **Add New Project** → энэ `khujirt` repo.
-2. **Root Directory**: `web` (Framework: Next.js автоматаар).
-3. Environment Variables (`web/.env.example`):
-   - `KHUJIRT_API_URL` — Python API хаяг, ж: `https://khujirt-api.<subdomain>.workers.dev`
-   - `KHUJIRT_API_PROXY_KEY` — Worker-ийн `API_PROXY_KEY` secret-тэй ижил
-   - `NEXT_PUBLIC_SITE_URL` — өөр домэйн ашиглах бол (ж: `https://khujirt.mn`)
-4. Deploy.
+Тохиргоо шаардлагагүй: [vercel.com/new](https://vercel.com/new) → **Khujirt** repo → **Import** → **Deploy**.
+Төслийн нэр `khujirt` тул хаяг нь **khujirt.vercel.app** болно. `main` руу push хийх бүрт автоматаар шинэчлэгдэнэ.
+
+Python API-г холбосны дараа Vercel → Settings → Environment Variables (`.env.example`):
+
+- `KHUJIRT_API_URL` — Python API хаяг, ж: `https://khujirt-api.<subdomain>.workers.dev`
+- `KHUJIRT_API_PROXY_KEY` — Worker-ийн `API_PROXY_KEY` secret-тэй ижил
+- `NEXT_PUBLIC_SITE_URL` — өөр домэйн ашиглах бол (ж: `https://khujirt.mn`)
 
 ## Cloudflare D1 + Python API
 
@@ -72,10 +70,10 @@ npx wrangler deploy
 
 ## Агуулга засах
 
-- Текст (MN/EN): `web/lib/i18n.ts`
-- Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `web/lib/content.ts`
+- Текст (MN/EN): `lib/i18n.ts`
+- Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
 - Тоон баримт: D1 `facts` хүснэгт (`since`, `mineral_count`, `additives`)
-- 3D түүхийн камер, манан, долгион: `web/components/three/story.ts` → `STATES`
+- 3D түүхийн камер, манан, долгион: `components/three/story.ts` → `STATES`
 
 Бүтээгдэхүүний зураг, мэдээллийг [gem.mn](https://www.gem.mn/mn/brands/khujirt-gem)-ийн Хужирт хуудаснаас авсан.
 
