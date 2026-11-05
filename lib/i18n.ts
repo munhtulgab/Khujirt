@@ -112,7 +112,7 @@ const mn = {
     privacy: "Таны мэдээллийг зөвхөн хариу өгөхөд ашиглана.",
   },
   footer: {
-    manifesto: "Байгаль бидэнд өгсөн хамгийн цэвэр зүйлээ хэвээр нь хадгалж, хүн бүрт хүргэх нь бидний амлалт.",
+    manifesto: "Монгол хүн бүр эрүүл байг",
     tag: "Байгалийн эрдэст ус",
     source: "Эх булаг",
     place: "Хужирт, Өвөрхангай",
@@ -230,7 +230,7 @@ const en: Dictionary = {
     privacy: "We only use your details to reply to you.",
   },
   footer: {
-    manifesto: "Our promise: keep the purest thing nature gave us exactly as it is, and share it with everyone.",
+    manifesto: "Let every Mongolian be healthy",
     tag: "Natural mineral water",
     source: "The source",
     place: "Khujirt, Övörkhangai, Mongolia",

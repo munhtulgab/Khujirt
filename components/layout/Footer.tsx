@@ -1,14 +1,20 @@
 import Image from "next/image";
 import type { Dictionary, Locale } from "@/lib/i18n";
 import { BRAND } from "@/lib/site";
+import PromiseVideo from "./PromiseVideo";
 
 export default function Footer({ t, lang }: { t: Dictionary["footer"]; lang: Locale }) {
   return (
-    <footer className="relative z-10 border-t border-white/70 bg-white/85 px-[max(20px,6vw)] pb-10 pt-[14vh] backdrop-blur-xl">
-      <p data-reveal className="max-w-[22ch] font-serif text-[clamp(30px,4.2vw,60px)] italic leading-[1.08] text-navy">
-        <span className="block font-display text-[1.4em] not-italic leading-none text-red">“</span>
-        {t.manifesto}
-      </p>
+    <footer className="relative z-10 overflow-hidden border-t border-white/70 bg-white/85 px-[max(20px,6vw)] pb-10 pt-[12vh] backdrop-blur-xl">
+      <div className="grid items-center gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
+        <p data-reveal className="max-w-[16ch] font-serif text-[clamp(34px,4.6vw,68px)] italic leading-[1.06] text-navy">
+          <span className="block font-display text-[1.4em] not-italic leading-none text-red">“</span>
+          {t.manifesto}
+        </p>
+        <div data-reveal className="-mx-[max(20px,6vw)] lg:mx-0 lg:-mr-[max(20px,6vw)]">
+          <PromiseVideo />
+        </div>
+      </div>
       <div className="mt-[10vh] grid gap-10 border-t border-navy/10 pt-10 md:grid-cols-[1.3fr_1fr_1fr]">
         <div>
           <Image src={BRAND.logo} alt="Хужирт" width={150} height={93} className="h-auto w-[150px]" />

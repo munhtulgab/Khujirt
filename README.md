@@ -75,6 +75,7 @@ npx wrangler deploy
 - Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
 - Тоон баримт: D1 `facts` хүснэгт (`since`, `mineral_count`, `additives`)
 - 3D түүхийн камер, манан, долгион: `components/three/story.ts` → `STATES`
+- Хөл хэсгийн уриа: `lib/i18n.ts` → `footer.manifesto`; брэндийн бичлэг: `public/media/khujirt-amlalt.mp4` (дуугүй, зөвхөн дэлгэцэнд харагдах үед тоглоно, постер `khujirt-amlalt.webp`)
 
 Бүтээгдэхүүний зураг, мэдээллийг [gem.mn](https://www.gem.mn/mn/brands/khujirt-gem)-ийн Хужирт хуудаснаас авсан.
 
