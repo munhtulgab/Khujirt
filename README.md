@@ -50,22 +50,17 @@ Backend-гүйгээр ч бүрэн ажиллана: бүтээгдэхүүн,
 Тохиргоо шаардлагагүй: [vercel.com/new](https://vercel.com/new) → **Khujirt** repo → **Import** → **Deploy**.
 Төслийн нэр `khujirt` тул хаяг нь **khujirt.vercel.app** болно. `main` руу push хийх бүрт автоматаар шинэчлэгдэнэ.
 
-Python API-г холбосны дараа Vercel → Settings → Environment Variables (`.env.example`):
-
-- `KHUJIRT_API_URL` — Python API хаяг, ж: `https://khujirt-api.<subdomain>.workers.dev`
-- `KHUJIRT_API_PROXY_KEY` — Worker-ийн `API_PROXY_KEY` secret-тэй ижил
-- `NEXT_PUBLIC_SITE_URL` — өөр домэйн ашиглах бол (ж: `https://khujirt.mn`)
+Vercel дээр env тохируулах шаардлагагүй: API-ийн хаяг `lib/api-endpoint.json`-д бичигдэнэ.
+Хүсвэл (`.env.example`): `KHUJIRT_API_URL` — өөр API хаяг, `NEXT_PUBLIC_SITE_URL` — өөр домэйн (ж: `https://khujirt.mn`).
 
 ## Cloudflare D1 + Python API
 
-```bash
-cd backend
-# D1: khujirt-db (already created and migrated; id in backend/wrangler.toml)
-npx wrangler d1 migrations apply khujirt-db --remote
-npx wrangler secret put IP_HASH_SALT
-npx wrangler secret put API_PROXY_KEY
-npx wrangler deploy
-```
+D1 бааз `khujirt-db` үүссэн, migration-ууд хийгдсэн (ID нь `backend/wrangler.toml`-д).
+Worker-ийг GitHub Actions байршуулна (`.github/workflows/deploy-api.yml`): `backend/` өөрчлөгдөх бүрт
+тест → D1 migration → `wrangler deploy` → `IP_HASH_SALT` (анх удаа) → шалгалт → хаягийг `lib/api-endpoint.json`-д бичнэ.
+
+Нэг удаа: repo → Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`
+(Cloudflare → My Profile → API Tokens → **Edit Cloudflare Workers** загвар + **Account · D1 · Edit**).
 
 Дэлгэрэнгүй: [backend/README.md](backend/README.md).
 

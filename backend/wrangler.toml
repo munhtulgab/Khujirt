@@ -4,15 +4,15 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["python_workers"]
 
 [vars]
-# Browser origins allowed to call POST /api/contact directly (the site normally goes through its own proxy).
+# Browser origins allowed to call POST /api/contact (the site's contact form posts here directly).
 ALLOWED_ORIGINS = "https://khujirt.vercel.app,http://localhost:3000"
 # Contact form: at most CONTACT_RATE_LIMIT messages per visitor per CONTACT_RATE_WINDOW seconds.
 CONTACT_RATE_LIMIT = "5"
 CONTACT_RATE_WINDOW = "3600"
 
-# Secrets (not in this file):
-#   npx wrangler secret put IP_HASH_SALT    # random string used to hash visitor IPs
-#   npx wrangler secret put API_PROXY_KEY   # same value as KHUJIRT_API_PROXY_KEY on Vercel
+# Secrets (not in this file; the deploy workflow creates IP_HASH_SALT on first deploy):
+#   IP_HASH_SALT    random string used to hash visitor IPs
+#   API_PROXY_KEY   optional: when set, only a proxy holding the same key may post contact messages
 
 [[d1_databases]]
 binding = "DB"

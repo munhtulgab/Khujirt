@@ -2,7 +2,10 @@
 import { FACTS, PRODUCTS, localizeProduct, type Facts, type Product, type ProductCategory, type Packaging } from "./content";
 import type { Locale } from "./i18n";
 
-const API_URL = (process.env.KHUJIRT_API_URL || "").replace(/\/$/, "");
+import endpoint from "./api-endpoint.json";
+
+/** The API address: an env override, else the address the deploy workflow recorded. */
+const API_URL = (process.env.KHUJIRT_API_URL || endpoint.url || "").replace(/\/$/, "");
 const CATEGORIES: ProductCategory[] = ["still", "sparkling", "iodine", "flavoured"];
 const PACKAGING: Packaging[] = ["pet", "glass"];
 

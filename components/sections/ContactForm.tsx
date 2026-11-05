@@ -2,6 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 import type { Dictionary, Locale } from "@/lib/i18n";
+import endpoint from "@/lib/api-endpoint.json";
+
+/**
+ * Messages go straight to the API (it allows this site's origin and sees the visitor's own IP for
+ * rate limiting). Without a recorded API address the same-origin /api/contact proxy is used.
+ */
+const API = (process.env.NEXT_PUBLIC_KHUJIRT_API_URL || endpoint.url || "").replace(/\/$/, "");
+const CONTACT_URL = API ? `${API}/api/contact` : "/api/contact";
 
 type Status = "idle" | "sending" | "sent" | "error" | "rateLimited" | "notConfigured" | "invalid";
 
@@ -40,7 +48,7 @@ export default function ContactForm({ t, lang }: { t: Dictionary["contact"]; lan
 
     setStatus("sending");
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch(CONTACT_URL, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),

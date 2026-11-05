@@ -10,7 +10,7 @@
 | `GET` | `/api/facts` | сайтын тоон баримтууд (`since`, `mineralCount`, `additives`) |
 | `POST` | `/api/contact` | маягтын зурвас (JSON: `name`, `email` эсвэл `phone`, `message`, `locale`) |
 
-Хамгаалалт: honeypot талбар, IP тус бүрээр хязгаар (анхдагч 5 зурвас / цаг), IP-г хадгалахгүй — зөвхөн давсалсан hash, `API_PROXY_KEY` тохируулсан үед зөвхөн сайтын proxy бичих эрхтэй, алдааны дэлгэрэнгүйг гадагш гаргахгүй.
+Хамгаалалт: honeypot талбар, IP тус бүрээр хязгаар (анхдагч 5 зурвас / цаг), IP-г хадгалахгүй — зөвхөн давсалсан hash, зөвхөн `ALLOWED_ORIGINS` дахь сайтаас браузераар бичнэ (`API_PROXY_KEY` тохируулбал зөвхөн proxy), алдааны дэлгэрэнгүйг гадагш гаргахгүй.
 
 ## Бүтэц
 
@@ -20,7 +20,8 @@ backend/
 ├── pyproject.toml           pywrangler / pytest
 ├── migrations/
 │   ├── 0001_init.sql        хүснэгтүүд: products, facts, contact_messages
-│   └── 0002_seed.sql        gem.mn дээрх Хужирт бүтээгдэхүүнүүд
+│   ├── 0002_seed.sql        gem.mn дээрх Хужирт бүтээгдэхүүнүүд
+│   └── 0003_product_sizes.sql  савлагааны хэмжээнүүд
 ├── src/
 │   ├── entry.py             Cloudflare Worker (WorkerEntrypoint)
 │   └── khujirt_api/
@@ -31,17 +32,22 @@ backend/
 
 ## Байршуулах
 
+`khujirt-db` бааз үүссэн, 3 migration хийгдсэн, ID нь `wrangler.toml`-д бий.
+
+Автоматаар: `main` руу `backend/` өөрчлөлт push хийх бүрт `.github/workflows/deploy-api.yml` ажиллана —
+тест, `d1 migrations apply`, `wrangler deploy`, `IP_HASH_SALT`-г анх удаа санамсаргүйгээр үүсгэх, API-г шалгах,
+гарсан `https://khujirt-api.<subdomain>.workers.dev` хаягийг `lib/api-endpoint.json`-д бичих (Vercel өөрөө шинэчлэгдэнэ).
+Repo-д `CLOUDFLARE_API_TOKEN` secret хэрэгтэй (Edit Cloudflare Workers загвар + Account · D1 · Edit).
+
+Гараар:
+
 ```bash
 cd backend
 npx wrangler login
-# khujirt-db бааз үүссэн, 3 migration хийгдсэн, ID нь wrangler.toml-д бий
 npx wrangler d1 migrations apply khujirt-db --remote
 npx wrangler secret put IP_HASH_SALT           # урт санамсаргүй мөр
-npx wrangler secret put API_PROXY_KEY          # Vercel дээрх KHUJIRT_API_PROXY_KEY-тэй ижил
-npx wrangler deploy                            # эсвэл: uv run pywrangler deploy
+npx wrangler deploy
 ```
-
-Гарсан хаягийг (`https://khujirt-api.<subdomain>.workers.dev`) Vercel дээр `KHUJIRT_API_URL` болгож тохируулна.
 
 ## Локал дээр
 
