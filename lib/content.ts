@@ -83,7 +83,7 @@ export const PRODUCTS: ProductRecord[] = [
     },
     category: "flavoured",
     packaging: "glass",
-    volumes: ["330 мл", "700 мл"],
+    volumes: ["330 мл", "600 мл"],
     image: `${CDN}/2844818/large/Khujirt_glass_Natural_0.7.png`,
     shopUrl: `${SHOP}/khujirt-tsangis`,
   },

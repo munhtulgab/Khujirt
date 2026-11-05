@@ -1,5 +1,5 @@
 -- Bottle sizes and photos confirmed by Khujirt: PET still water 330 мл / 500 мл / 1.5 л,
--- glass bottles 330 мл / 600 мл.
+-- glass bottles (still, sparkling, cranberry) 330 мл / 600 мл.
 
 UPDATE products
 SET volumes = '["330 мл","500 мл","1.5 л"]',
@@ -10,7 +10,7 @@ WHERE slug = 'khujirt';
 UPDATE products
 SET volumes = '["330 мл","600 мл"]',
     updated_at = CAST(strftime('%s', 'now') AS INTEGER)
-WHERE slug IN ('khujirt-shil', 'khuijrt-sparkling');
+WHERE slug IN ('khujirt-shil', 'khuijrt-sparkling', 'khujirt-tsangis');
 
 UPDATE products
 SET description_mn = 'Шилэн саванд савласан хийжүүлсэн байгалийн эрдэст ус.',

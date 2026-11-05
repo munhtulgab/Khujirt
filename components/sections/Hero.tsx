@@ -40,9 +40,8 @@ export default function Hero({ t }: { t: Dictionary["hero"] }) {
         </div>
       </div>
 
-      <p className="absolute bottom-10 right-[max(20px,6vw)] hidden max-w-[34ch] text-right text-[13px] leading-relaxed text-ink-soft md:block">
-        {t.caption}
-      </p>
+      {/* describes the 3D scene for screen readers; the bottles stand where it used to be shown */}
+      <p className="sr-only">{t.caption}</p>
 
       <a
         href="#legend"

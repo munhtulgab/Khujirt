@@ -67,8 +67,8 @@ export const DEER_SCALE = 3.2;
 // the stag stands in the shallows: hooves a little under the surface
 export const DEER_POSITION: [number, number, number] = [0.8, -0.26, -1.2];
 export const DEER_ROTATION = -2.6;
-/** Where the real Khujirt bottles stand in the shallows, in front of the stag. */
-export const BOTTLE_POSITION: [number, number, number] = [-0.4, 0, 1.3];
+/** Front of the arc of Khujirt bottles standing in the shallows (rings spread from here). */
+export const BOTTLE_POSITION: [number, number, number] = [0.55, 0, 2.05];
 
 /** Pose of the idle animation the point cloud was sampled at, and the transform that puts the
  *  model on the lake facing +x with height 1 (from scripts used to prepare public/models). */

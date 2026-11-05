@@ -75,7 +75,7 @@ def test_products_mn(db):
     assert products[0]["image"].endswith("/2844879/large/Khujirt_pet___1.5L.png")
     assert products[1]["volumes"] == ["330 мл", "500 мл", "1.5 л"]
     glass = {p["slug"]: p["volumes"] for p in products if p["packaging"] == "glass"}
-    assert glass["khujirt-shil"] == glass["khuijrt-sparkling"] == ["330 мл", "600 мл"]
+    assert glass["khujirt-shil"] == glass["khuijrt-sparkling"] == glass["khujirt-tsangis"] == ["330 мл", "600 мл"]
     assert {p["category"] for p in products} == {"still", "sparkling", "iodine", "flavoured"}
     assert all(p["image"].startswith("https://") and p["shopUrl"].startswith("https://www.gem.mn/") for p in products)
     assert "max-age" in r.headers["cache-control"]

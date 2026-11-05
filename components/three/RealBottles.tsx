@@ -3,19 +3,70 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { PRODUCTS } from "@/lib/content";
-import { BOTTLE_POSITION, story } from "./story";
+import { PRODUCTS, type Packaging } from "@/lib/content";
+import { rng } from "./noise";
+import { splashes, story } from "./story";
 
 /**
- * The real Khujirt bottles (product photos from gem.mn) standing in the shallows next to the stag.
- * Photos come through Next's same-origin image optimizer so WebGL may read them; a white studio
- * background, if there is one, is cut away in the browser before the photo becomes a texture.
+ * The whole Khujirt range, every bottle size, standing in the shallows in front of the stag.
+ * Photos are the real product shots from gem.mn, loaded through Next's same-origin image optimizer
+ * so WebGL may read them; a light studio background, if present, is cut away in the browser.
  */
 
-const SHOWN: { slug: string; dx: number; dz: number; height: number }[] = [
-  { slug: "khujirt-shil", dx: 0, dz: 0, height: 2.05 },
-  { slug: "khujirt", dx: -0.78, dz: -0.8, height: 2.7 },
-];
+/** The smaller PET sizes of Хужирт ус are shown with the 0.86 L bottle shot. */
+const SMALL_WATER = "https://cdnp.cody.mn/spree/images/2844882/large/Khujirt_pet__0.860.png";
+
+/** "330 мл" → 330, "1.5 л" → 1500 */
+function millilitres(volume: string) {
+  const v = volume.trim().toLowerCase();
+  const n = parseFloat(v.replace(",", "."));
+  return v.endsWith("мл") || v.endsWith("ml") ? n : n * 1000;
+}
+
+/** Height in scene units; bottles grow roughly with the cube root of their volume. */
+function bottleHeight(packaging: Packaging, ml: number) {
+  return (packaging === "glass" ? 0.72 : 0.68) * Math.cbrt(ml / 330);
+}
+
+interface Slot {
+  key: string;
+  src: string;
+  height: number;
+  x: number;
+  z: number;
+  delay: number;
+}
+
+/** Each product a little family (largest bottle at the back), the families side by side in front of the stag. */
+const LINEUP: Slot[] = (() => {
+  const families = PRODUCTS.filter((p) => p.volumes.length > 0);
+  const slots: Slot[] = [];
+  const offsets: Record<number, [number, number][]> = {
+    1: [[0, 0]],
+    2: [[-0.11, -0.06], [0.15, 0.17]],
+    3: [[0, -0.14], [-0.21, 0.15], [0.21, 0.19]],
+  };
+  families.forEach((p, k) => {
+    const sizes = [...p.volumes].sort((a, b) => millilitres(b) - millilitres(a));
+    const u = families.length > 1 ? k / (families.length - 1) : 0.5;
+    const cx = -0.95 + u * 3.1;
+    const cz = 1.15 + Math.sin(u * Math.PI) * 0.45;
+    const place = offsets[Math.min(3, sizes.length)] ?? offsets[3];
+    sizes.slice(0, 3).forEach((v, j) => {
+      const ml = millilitres(v);
+      const [dx, dz] = place[j];
+      slots.push({
+        key: `${p.slug}-${ml}`,
+        src: p.slug === "khujirt" && ml < 1000 ? SMALL_WATER : p.image,
+        height: bottleHeight(p.packaging, ml),
+        x: cx + dx,
+        z: cz + dz,
+        delay: u * 0.22 + j * 0.03,
+      });
+    });
+  });
+  return slots;
+})();
 
 function optimized(src: string) {
   return `/_next/image?url=${encodeURIComponent(src)}&w=828&q=75`;
@@ -86,7 +137,12 @@ function cutOutBackground(img: ImageData) {
     }
 }
 
-async function loadBottle(src: string): Promise<{ texture: THREE.CanvasTexture; aspect: number } | null> {
+interface Photo {
+  texture: THREE.CanvasTexture;
+  aspect: number;
+}
+
+async function loadPhoto(src: string): Promise<Photo | null> {
   const img = new Image();
   img.decoding = "async";
   img.src = optimized(src);
@@ -131,70 +187,88 @@ async function loadBottle(src: string): Promise<{ texture: THREE.CanvasTexture; 
   return { texture, aspect: cw / ch };
 }
 
-function Bottle({ src, dx, dz, height }: { src: string; dx: number; dz: number; height: number }) {
-  const [photo, setPhoto] = useState<{ texture: THREE.CanvasTexture; aspect: number } | null>(null);
-  const ref = useRef<THREE.Mesh>(null);
-  const base = useMemo(() => new THREE.Vector3(BOTTLE_POSITION[0] + dx, 0, BOTTLE_POSITION[2] + dz), [dx, dz]);
+export default function RealBottles() {
+  const [photos, setPhotos] = useState<Record<string, Photo | null>>({});
+  const meshes = useRef<(THREE.Mesh | null)[]>([]);
+  const geometry = useMemo(() => new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), []);
+  const ringClock = useMemo(() => ({ next: 0, r: rng(17) }), []);
 
+  // each photo once, however many sizes use it
   useEffect(() => {
     let alive = true;
-    loadBottle(src).then((p) => {
-      if (alive) setPhoto(p);
-      else p?.texture.dispose();
-    });
+    const loaded: Photo[] = [];
+    for (const src of new Set(LINEUP.map((b) => b.src)))
+      loadPhoto(src).then((p) => {
+        if (!alive) return p?.texture.dispose();
+        if (p) loaded.push(p);
+        setPhotos((prev) => ({ ...prev, [src]: p }));
+      });
     return () => {
       alive = false;
+      loaded.forEach((p) => p.texture.dispose());
     };
-  }, [src]);
-  useEffect(() => () => photo?.texture.dispose(), [photo]);
+  }, []);
 
-  const material = useMemo(
-    () =>
-      photo
-        ? new THREE.MeshBasicMaterial({
-            map: photo.texture,
-            alphaTest: 0.35,
-            alphaToCoverage: true,
-            toneMapped: false,
-            fog: false,
-            side: THREE.DoubleSide,
-            color: new THREE.Color("#fff7ee"),
-          })
-        : null,
-    [photo],
-  );
-  useEffect(() => () => material?.dispose(), [material]);
+  const materials = useMemo(() => {
+    const out: Record<string, THREE.MeshBasicMaterial> = {};
+    for (const [src, p] of Object.entries(photos))
+      if (p)
+        out[src] = new THREE.MeshBasicMaterial({
+          map: p.texture,
+          alphaTest: 0.35,
+          alphaToCoverage: true,
+          toneMapped: false,
+          fog: false,
+          side: THREE.DoubleSide,
+          color: new THREE.Color("#fff7ee"),
+        });
+    return out;
+  }, [photos]);
+  useEffect(() => () => Object.values(materials).forEach((m) => m.dispose()), [materials]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
 
   useFrame((state) => {
-    const mesh = ref.current;
-    if (!mesh) return;
     const t = state.clock.elapsedTime;
-    const b = THREE.MathUtils.clamp(story.bottle, 0, 1);
-    // standing in the shallows; it slips under the surface when the story moves on
-    mesh.position.set(base.x, height / 2 - 0.12 + Math.sin(t * 0.8 + dx) * 0.012 - (1 - b) * (height + 0.4), base.z);
-    // always turned to the viewer
-    mesh.rotation.set(0, Math.atan2(state.camera.position.x - base.x, state.camera.position.z - base.z), Math.sin(t * 0.6 + dz) * 0.008);
-    mesh.visible = b > 0.01;
+    const cam = state.camera.position;
+    let shown = 0;
+    LINEUP.forEach((slot, i) => {
+      const mesh = meshes.current[i];
+      if (!mesh) return;
+      // they slip under the surface one after another when the story moves on, and rise again
+      const b = THREE.MathUtils.smoothstep(story.bottle, slot.delay, slot.delay + 0.75);
+      mesh.visible = b > 0.01;
+      if (!mesh.visible) return;
+      shown++;
+      mesh.position.set(slot.x, -0.06 + Math.sin(t * 0.8 + i) * 0.006 - (1 - b) * (slot.height + 0.3), slot.z);
+      mesh.rotation.set(0, Math.atan2(cam.x - slot.x, cam.z - slot.z), Math.sin(t * 0.6 + i * 1.7) * 0.01);
+    });
+    // now and then a ring spreads from the foot of a bottle
+    if (shown > 0 && t > ringClock.next) {
+      const slot = LINEUP[Math.floor(ringClock.r() * LINEUP.length)];
+      splashes.push({ x: slot.x, z: slot.z, t });
+      ringClock.next = t + 0.6 + ringClock.r() * 1.1;
+    }
   });
 
-  if (!photo || !material) return null;
-  return (
-    <mesh ref={ref} material={material} renderOrder={1}>
-      <planeGeometry args={[height * photo.aspect, height]} />
-    </mesh>
-  );
-}
-
-export default function RealBottles() {
-  const bottles = SHOWN.map((s) => {
-    const product = PRODUCTS.find((p) => p.slug === s.slug);
-    return product ? { ...s, src: product.image } : null;
-  }).filter((b): b is (typeof SHOWN)[number] & { src: string } => b !== null);
   return (
     <group>
-      {bottles.map((b) => (
-        <Bottle key={b.slug} src={b.src} dx={b.dx} dz={b.dz} height={b.height} />
-      ))}
+      {LINEUP.map((slot, i) => {
+        const photo = photos[slot.src];
+        const material = materials[slot.src];
+        if (!photo || !material) return null;
+        return (
+          <mesh
+            key={slot.key}
+            ref={(el) => {
+              meshes.current[i] = el;
+            }}
+            geometry={geometry}
+            material={material}
+            scale={[slot.height * photo.aspect, slot.height, 1]}
+            renderOrder={1}
+          />
+        );
+      })}
     </group>
   );
 }
