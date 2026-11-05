@@ -5,13 +5,13 @@ import { Canvas } from "@react-three/fiber";
 import { Environment, Lightformer, PerformanceMonitor } from "@react-three/drei";
 import gsap from "gsap";
 import * as THREE from "three";
-import Bottle from "./Bottle";
 import CameraRig from "./CameraRig";
 import Deer from "./Deer";
 import Droplets from "./Droplets";
 import Forest from "./Forest";
 import Lake from "./Lake";
 import Mist from "./Mist";
+import RealBottles from "./RealBottles";
 import Shore from "./Shore";
 import Sky from "./Sky";
 import StagParticles from "./StagParticles";
@@ -101,7 +101,7 @@ export default function Scene() {
           <StagParticles />
         </group>
         <Droplets count={quality === "high" ? 44 : 24} />
-        <Bottle />
+        <RealBottles />
         <Intro reduceMotion={reduceMotion} />
       </Suspense>
       <CameraRig reduceMotion={reduceMotion} />
