@@ -16,8 +16,8 @@ CONTACT_RATE_WINDOW = "3600"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "khujirt"
-database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID" # from: npx wrangler d1 create khujirt
+database_name = "khujirt-db"
+database_id = "a748e6df-ddbf-4111-a723-f9c836cbf3e7"
 migrations_dir = "migrations"
 
 [observability]

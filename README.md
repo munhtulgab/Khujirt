@@ -60,8 +60,8 @@ Python API-г холбосны дараа Vercel → Settings → Environment Va
 
 ```bash
 cd backend
-npx wrangler d1 create khujirt          # database_id → wrangler.toml
-npx wrangler d1 migrations apply khujirt --remote
+# D1: khujirt-db (already created and migrated; id in backend/wrangler.toml)
+npx wrangler d1 migrations apply khujirt-db --remote
 npx wrangler secret put IP_HASH_SALT
 npx wrangler secret put API_PROXY_KEY
 npx wrangler deploy

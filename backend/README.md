@@ -34,8 +34,8 @@ backend/
 ```bash
 cd backend
 npx wrangler login
-npx wrangler d1 create khujirt                 # гарсан database_id-г wrangler.toml-д бичнэ
-npx wrangler d1 migrations apply khujirt --remote
+# khujirt-db бааз үүссэн, 3 migration хийгдсэн, ID нь wrangler.toml-д бий
+npx wrangler d1 migrations apply khujirt-db --remote
 npx wrangler secret put IP_HASH_SALT           # урт санамсаргүй мөр
 npx wrangler secret put API_PROXY_KEY          # Vercel дээрх KHUJIRT_API_PROXY_KEY-тэй ижил
 npx wrangler deploy                            # эсвэл: uv run pywrangler deploy
@@ -47,7 +47,7 @@ npx wrangler deploy                            # эсвэл: uv run pywrangler d
 
 ```bash
 cp .dev.vars.example .dev.vars
-npx wrangler d1 migrations apply khujirt --local
+npx wrangler d1 migrations apply khujirt-db --local
 npx wrangler dev                               # эсвэл: uv run pywrangler dev
 python -m pytest                               # эсвэл: uv run pytest
 ```
@@ -56,9 +56,9 @@ python -m pytest                               # эсвэл: uv run pytest
 
 ```bash
 # бүтээгдэхүүнийг түр нуух
-npx wrangler d1 execute khujirt --remote --command "UPDATE products SET active = 0 WHERE slug = 'khujirt-yoda'"
+npx wrangler d1 execute khujirt-db --remote --command "UPDATE products SET active = 0 WHERE slug = 'khujirt-yoda'"
 # ирсэн зурвасууд
-npx wrangler d1 execute khujirt --remote --command "SELECT id, name, email, phone, message, datetime(created_at, 'unixepoch') FROM contact_messages ORDER BY id DESC LIMIT 20"
+npx wrangler d1 execute khujirt-db --remote --command "SELECT id, name, email, phone, message, datetime(created_at, 'unixepoch') FROM contact_messages ORDER BY id DESC LIMIT 20"
 ```
 
 Сайт бүтээгдэхүүнийг 10 минут тутамд шинэчилнэ (ISR). API ажиллахгүй үед сайт `lib/content.ts` доторх нөөц өгөгдлөөр ажилласаар байна.
