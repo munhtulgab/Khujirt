@@ -40,7 +40,7 @@ export default function Products({ t, products, lang }: { t: Dictionary["product
                   fill
                   sizes="(min-width: 1024px) 30vw, (min-width: 768px) 45vw, 80vw"
                   priority={i < 2}
-                  className="object-contain p-[9%] transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:-translate-y-2 group-hover:scale-[1.03]"
+                  className="object-contain p-[9%] mix-blend-multiply transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:-translate-y-2 group-hover:scale-[1.03]"
                 />
                 <div className="absolute left-4 top-4 flex flex-wrap gap-2">
                   <span className={`rounded-full px-3 py-1 text-[12px] font-semibold ${CATEGORY_TONE[p.category]}`}>{t.categories[p.category]}</span>
@@ -51,10 +51,16 @@ export default function Products({ t, products, lang }: { t: Dictionary["product
                 <h3 className="font-display text-[19px] font-medium leading-snug">{p.name}</h3>
                 <p className="mt-3 flex-1 text-[15px] leading-relaxed text-ink-soft">{p.description}</p>
                 {p.volumes.length > 0 && (
-                  <p className="mt-4 text-[13.5px] text-navy">
-                    <span className="text-ink-soft">{t.volumes}: </span>
-                    {p.volumes.map((v) => formatVolume(v, lang)).join(" · ")}
-                  </p>
+                  <div className="mt-5">
+                    <p className="text-[11.5px] font-semibold uppercase tracking-[0.14em] text-ink-soft">{t.volumes}</p>
+                    <ul className="mt-2 flex flex-wrap gap-1.5">
+                      {p.volumes.map((v) => (
+                        <li key={v} className="rounded-full border border-navy/15 bg-white/85 px-3 py-1 text-[13px] font-semibold text-navy">
+                          {formatVolume(v, lang)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
                 <a
                   href={p.shopUrl}

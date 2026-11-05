@@ -13,8 +13,8 @@ import { BOTTLE_POSITION, story } from "./story";
  */
 
 const SHOWN: { slug: string; dx: number; dz: number; height: number }[] = [
-  { slug: "khujirt-shil", dx: 0, dz: 0, height: 2.1 },
-  { slug: "khujirt", dx: -0.72, dz: -0.75, height: 2.25 },
+  { slug: "khujirt-shil", dx: 0, dz: 0, height: 2.05 },
+  { slug: "khujirt", dx: -0.78, dz: -0.8, height: 2.7 },
 ];
 
 function optimized(src: string) {
