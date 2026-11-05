@@ -8,11 +8,11 @@ import { DEER_SCALE, DEER_XF, POSE_TIME, intro, story } from "./story";
 import { makeRippleNormalMap } from "./textures";
 
 const MODEL = "/models/deer.glb";
-const BLUE = new THREE.Color("#2f8fd1");
+const CLEAR = new THREE.Color("#9fd9d2");
 const AMBER = new THREE.Color("#e39a5c");
 
 /**
- * The stag as clear blue water: a transmissive, refractive body with moving ripples on its skin.
+ * The stag as clear water, like glass: a transmissive, refractive body with moving ripples on its skin.
  * A clipping plane lets it rise out of the lake (intro) and sink back into it (scroll).
  */
 export default function Deer() {
@@ -20,30 +20,50 @@ export default function Deer() {
   const { actions, names, mixer } = useAnimations(animations, scene);
 
   const clip = useMemo(() => new THREE.Plane(new THREE.Vector3(0, -1, 0), 0), []);
+  const rim = useMemo(() => ({ value: new THREE.Color("#fff1dc").multiplyScalar(0.85) }), []);
   const normalMap = useMemo(() => makeRippleNormalMap(), []);
   const material = useMemo(
     () =>
       new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color("#dcf2ff"),
+        color: new THREE.Color("#ffffff"),
         transmission: 1,
-        thickness: 0.9,
-        ior: 1.33,
-        roughness: 0.08,
+        thickness: 2.4,
+        ior: 1.45,
+        roughness: 0.025,
         metalness: 0,
-        attenuationColor: BLUE.clone(),
-        attenuationDistance: 1.4,
+        attenuationColor: CLEAR.clone(),
+        attenuationDistance: 1.7,
         clearcoat: 1,
-        clearcoatRoughness: 0.05,
+        clearcoatRoughness: 0.03,
         specularIntensity: 1,
-        envMapIntensity: 1.35,
+        specularColor: new THREE.Color("#fff6e8"),
+        dispersion: 0.3,
+        envMapIntensity: 2.6,
         normalMap,
-        normalScale: new THREE.Vector2(0.35, 0.35),
-        emissive: new THREE.Color("#7fd4ff"),
+        normalScale: new THREE.Vector2(0.14, 0.14),
+        emissive: new THREE.Color("#9fe3ff"),
         emissiveIntensity: 0,
         clippingPlanes: [clip],
       }),
     [clip, normalMap],
   );
+
+  // Bright contour where the glass turns away from the eye, as light gathers at the edges of water.
+  useEffect(() => {
+    material.customProgramCacheKey = () => "deer-rim";
+    material.onBeforeCompile = (shader) => {
+      shader.uniforms.uRim = rim;
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform vec3 uRim;")
+        .replace(
+          "#include <opaque_fragment>",
+          `float facing = clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);
+          outgoingLight += uRim.value * pow(1.0 - facing, 2.6);
+          #include <opaque_fragment>`.replace("uRim.value", "uRim"),
+        );
+    };
+    material.needsUpdate = true;
+  }, [material, rim]);
 
   useEffect(() => {
     scene.traverse((o) => {
@@ -79,8 +99,8 @@ export default function Deer() {
     // living water on its skin
     normalMap.offset.set(Math.sin(t * 0.11) * 0.06, (t * 0.035) % 1);
     // wounded: warmer, denser water; healing: an inner glow
-    material.attenuationColor.copy(BLUE).lerp(AMBER, story.wound * 0.75);
-    material.attenuationDistance = 1.4 - story.wound * 0.6;
+    material.attenuationColor.copy(CLEAR).lerp(AMBER, story.wound * 0.75);
+    material.attenuationDistance = 1.7 - story.wound * 0.9;
     material.emissiveIntensity = story.heal * (0.22 + 0.14 * Math.sin(t * 2.4));
   });
 

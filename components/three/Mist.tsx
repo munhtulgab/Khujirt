@@ -15,7 +15,7 @@ interface Puff {
   base: number;
 }
 
-/** Morning mist lying on the mountains and the lake. It clears as the visitor scrolls. */
+/** Evening haze in the valley and over the lake. It thins as the visitor scrolls. */
 export default function Mist() {
   const texture = useMemo(() => makeCloudTexture(), []);
   const puffs = useMemo<Puff[]>(() => {
@@ -25,12 +25,14 @@ export default function Mist() {
       return seed / 2147483647;
     };
     const list: Puff[] = [];
-    for (let i = 0; i < 16; i++) list.push({ x: -40 + r() * 80, y: 1.5 + r() * 4, z: -46 + r() * 22, s: 14 + r() * 14, speed: 0.15 + r() * 0.25, base: 0.75 + r() * 0.25 });
-    for (let i = 0; i < 6; i++) list.push({ x: -12 + r() * 24, y: 0.4 + r() * 0.8, z: -14 + r() * 10, s: 8 + r() * 6, speed: 0.1 + r() * 0.15, base: 0.4 + r() * 0.2 });
+    // haze in the valley, catching the low sun
+    for (let i = 0; i < 14; i++) list.push({ x: -70 + r() * 140, y: 3 + r() * 6, z: -110 + r() * 50, s: 30 + r() * 24, speed: 0.15 + r() * 0.25, base: 0.1 + r() * 0.1 });
+    // thin breath of mist over the far side of the lake
+    for (let i = 0; i < 6; i++) list.push({ x: -14 + r() * 32, y: 0.35 + r() * 0.6, z: -46 + r() * 9, s: 9 + r() * 7, speed: 0.1 + r() * 0.15, base: 0.12 + r() * 0.1 });
     return list;
   }, []);
   const materials = useMemo(
-    () => puffs.map(() => new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, opacity: 0, fog: true })),
+    () => puffs.map(() => new THREE.SpriteMaterial({ map: texture, color: "#fff0da", transparent: true, depthWrite: false, opacity: 0, fog: false })),
     [puffs, texture],
   );
   const refs = useRef<(THREE.Sprite | null)[]>([]);

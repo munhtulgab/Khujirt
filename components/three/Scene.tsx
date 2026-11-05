@@ -8,12 +8,15 @@ import * as THREE from "three";
 import Bottle from "./Bottle";
 import CameraRig from "./CameraRig";
 import Deer from "./Deer";
+import Droplets from "./Droplets";
+import Forest from "./Forest";
 import Lake from "./Lake";
 import Mist from "./Mist";
-import Mountains from "./Mountains";
+import Shore from "./Shore";
 import Sky from "./Sky";
 import StagParticles from "./StagParticles";
-import { DEER_POSITION, DEER_ROTATION, STATES, intro, pointer } from "./story";
+import Terrain from "./Terrain";
+import { DEER_POSITION, DEER_ROTATION, STATES, SUN_DIR, intro, pointer } from "./story";
 
 /** Starts the stag's formation once the model and the particles are ready. */
 function Intro({ reduceMotion }: { reduceMotion: boolean }) {
@@ -32,7 +35,8 @@ function Intro({ reduceMotion }: { reduceMotion: boolean }) {
 }
 
 export default function Scene() {
-  const [dpr, setDpr] = useState(1.5);
+  // pixel ratio ceiling; the device's own ratio is used when it is lower
+  const [maxDpr, setMaxDpr] = useState(1.5);
   const [quality, setQuality] = useState<"high" | "low">("high");
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -40,7 +44,7 @@ export default function Scene() {
     const small = Math.min(window.innerWidth, window.innerHeight) < 700;
     if (small) {
       setQuality("low");
-      setDpr(1.25);
+      setMaxDpr(1.25);
     }
     setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     const onMove = (e: PointerEvent) => {
@@ -54,32 +58,41 @@ export default function Scene() {
 
   return (
     <Canvas
-      dpr={dpr}
-      camera={{ fov: 34, near: 0.1, far: 400, position: [STATES.hero.cx, STATES.hero.cy, STATES.hero.cz] }}
+      dpr={[1, maxDpr]}
+      camera={{ fov: 34, near: 0.1, far: 600, position: [STATES.hero.cx, STATES.hero.cy, STATES.hero.cz] }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       onCreated={({ gl }) => {
         gl.localClippingEnabled = true;
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.05;
+        gl.toneMapping = THREE.NeutralToneMapping;
+        gl.toneMappingExposure = 1.0;
       }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(quality === "high" ? 1.75 : 1.4)} />
-      <fog attach="fog" args={["#e4f2fb", 24, 95]} />
-      <hemisphereLight args={["#ffffff", "#bfe0f5", 0.9]} />
-      <directionalLight position={[6, 9, 5]} intensity={1.8} color="#fff4e2" />
+      <PerformanceMonitor onDecline={() => setMaxDpr(1)} onIncline={() => setMaxDpr(quality === "high" ? 1.75 : 1.4)} />
+      <fog attach="fog" args={["#efd9bb", 90, 560]} />
+      <hemisphereLight args={["#ffe6c4", "#56633f", 0.72]} />
+      {/* the low sun, from the left of the valley */}
+      <directionalLight position={[-90, 40, -24]} intensity={3.4} color="#ffcd8c" />
+      <directionalLight position={[30, 22, 45]} intensity={0.6} color="#dfe7f2" />
       <Environment resolution={256} frames={1}>
-        <mesh scale={60}>
-          <sphereGeometry args={[1, 32, 16]} />
-          <meshBasicMaterial side={THREE.BackSide} color="#cfe8f8" />
+        <Sky animated={false} />
+        <Lightformer form="circle" intensity={7} color="#ffe0b0" position={[SUN_DIR[0] * 50, 6, SUN_DIR[2] * 50]} scale={9} />
+        <Lightformer form="rect" intensity={1.6} color="#ffffff" position={[26, 9, 18]} scale={[14, 6, 1]} />
+        {/* soft panels so the glass catches bright edges, like a studio */}
+        <Lightformer form="rect" intensity={2.4} color="#fff7ea" position={[0, 14, 26]} scale={[34, 8, 1]} />
+        <Lightformer form="rect" intensity={5} color="#ffffff" position={[2, 22, -2]} rotation-x={Math.PI / 2} scale={[10, 10, 1]} />
+        <Lightformer form="ring" intensity={4} color="#fff3dc" position={[-6, 8, 16]} scale={4} />
+        <Lightformer form="rect" intensity={3} color="#ffffff" position={[-16, 4, 14]} scale={[3, 16, 1]} />
+        <Lightformer form="rect" intensity={2.6} color="#ffffff" position={[17, 4, 10]} scale={[3, 16, 1]} />
+        <mesh position-y={-2} rotation-x={-Math.PI / 2}>
+          <circleGeometry args={[120, 32]} />
+          <meshBasicMaterial color="#4c5a3c" />
         </mesh>
-        <Lightformer form="rect" intensity={3} position={[0, 7, -4]} scale={[16, 4, 1]} color="#ffffff" />
-        <Lightformer form="rect" intensity={2.2} position={[7, 2.5, 4]} rotation-y={-Math.PI / 2} scale={[7, 3, 1]} color="#fff1dc" />
-        <Lightformer form="rect" intensity={1.8} position={[-7, 2.5, 3]} rotation-y={Math.PI / 2} scale={[7, 3, 1]} color="#bfe6ff" />
-        <Lightformer form="ring" intensity={2.4} position={[0, 3, 9]} scale={2.5} color="#ffffff" />
       </Environment>
 
       <Sky />
-      <Mountains />
+      <Terrain quality={quality} />
+      <Forest quality={quality} />
+      <Shore quality={quality} />
       <Mist />
       <Suspense fallback={null}>
         <Lake quality={quality} />
@@ -87,6 +100,7 @@ export default function Scene() {
           <Deer />
           <StagParticles />
         </group>
+        <Droplets count={quality === "high" ? 44 : 24} />
         <Bottle />
         <Intro reduceMotion={reduceMotion} />
       </Suspense>

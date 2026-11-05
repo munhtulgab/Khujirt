@@ -140,6 +140,20 @@
     animation: bubble-bob 6s ease-in-out infinite alternate;
   }
 
+  /* soft light behind copy that sits directly on the 3D scene */
+  .veil {
+    position: relative;
+    isolation: isolate;
+  }
+  .veil::before {
+    content: "";
+    position: absolute;
+    inset: -12% -14%;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgb(242 249 254 / 0.82), rgb(242 249 254 / 0.5) 55%, rgb(242 249 254 / 0));
+    pointer-events: none;
+  }
+
   .field {
     width: 100%;
     border-radius: 18px;

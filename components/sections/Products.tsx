@@ -18,14 +18,14 @@ export default function Products({ t, products, lang }: { t: Dictionary["product
   return (
     <section id="products" data-story="products" aria-labelledby="products-title" className="relative py-[16vh]">
       <div data-reveal className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5 px-[max(20px,6vw)]">
-        <div className="max-w-[640px]">
+        <div className="veil max-w-[640px]">
           <p className="eyebrow">{t.eyebrow}</p>
           <h2 id="products-title" className="mt-5 font-display text-[clamp(30px,4.2vw,62px)] font-medium leading-[1.06] tracking-[-0.02em]">
             {t.titleA}
             <span className="display-accent text-[1.16em]">{t.titleB}</span>
           </h2>
         </div>
-        <p className="max-w-[36ch] text-[17px] leading-relaxed text-ink-soft">{t.lead}</p>
+        <p className="veil max-w-[36ch] text-[17px] leading-relaxed text-ink-soft">{t.lead}</p>
       </div>
 
       <ul className="mt-[7vh] flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain px-[max(14px,6vw)] pb-6 [scrollbar-width:none] md:grid md:grid-cols-2 md:overflow-visible md:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden">

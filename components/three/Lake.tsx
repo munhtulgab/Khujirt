@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { MeshReflectorMaterial } from "@react-three/drei";
 import * as THREE from "three";
-import { BOTTLE_POSITION, HOOVES, deerToWorld, intro, story } from "./story";
+import { BOTTLE_POSITION, HOOVES, deerToWorld, intro, splashes, story } from "./story";
+
+const MAX_DROPS = 12;
 
 const rippleVertex = /* glsl */ `
   varying vec2 vP;
@@ -19,27 +21,36 @@ const rippleFragment = /* glsl */ `
   uniform float uTime, uAmp;
   uniform vec2 uHoof[4];
   uniform vec2 uSpring;
-  uniform vec3 uDrops[6];
+  uniform vec3 uDrops[${MAX_DROPS}];
+  uniform vec3 uBright, uDark;
   varying vec2 vP;
-  float crest(float d, float freq, float speed) { return pow(0.5 + 0.5 * sin(d * freq - uTime * speed), 12.0); }
   void main() {
-    float rings = 0.0;
-    for (int i = 0; i < 4; i++) { float d = length(vP - uHoof[i]); rings += crest(d, 16.0, 2.2) * exp(-d * 1.5); }
+    // signed wave height: crests catch the sky, troughs show the darker water
+    float w = 0.0;
+    for (int i = 0; i < 4; i++) {
+      float d = length(vP - uHoof[i]);
+      w += sin(d * 9.0 - uTime * 1.7) * exp(-d * 0.55) * smoothstep(0.05, 0.35, d);
+    }
     float ds = length(vP - uSpring);
-    rings += crest(ds, 10.0, 1.6) * exp(-ds * 0.6) * 1.2;
-    for (int i = 0; i < 6; i++) {
+    w += sin(ds * 8.0 - uTime * 1.4) * exp(-ds * 0.7) * 0.8;
+    for (int i = 0; i < ${MAX_DROPS}; i++) {
       float age = uTime - uDrops[i].z;
-      if (age > 0.0 && age < 2.4) {
-        float e = (length(vP - uDrops[i].xy) - age * 0.45) * 22.0;
-        rings += exp(-e * e) * exp(-age * 1.6) * 1.4;
+      if (age > 0.0 && age < 2.6) {
+        float e = (length(vP - uDrops[i].xy) - age * 0.42) * 20.0;
+        w += exp(-e * e) * exp(-age * 1.5) * 1.6;
       }
     }
-    float fade = 1.0 - smoothstep(4.0, 12.0, length(vP));
-    gl_FragColor = vec4(vec3(1.0), clamp(rings * uAmp * 0.55, 0.0, 0.85) * fade);
+    float fade = 1.0 - smoothstep(5.0, 15.0, length(vP - vec2(0.8, -1.2)));
+    float crest = pow(max(w, 0.0), 1.6);
+    float trough = pow(max(-w, 0.0), 1.6);
+    vec3 col = crest > trough ? uBright : uDark;
+    float a = clamp(max(crest * 0.6, trough * 0.32) * uAmp, 0.0, 0.8) * fade;
+    gl_FragColor = vec4(col, a);
+    #include <colorspace_fragment>
   }
 `;
 
-/** A still, mirror-like lake with ripples around the hooves, the spring and falling drops. */
+/** A still, mirror-like lake: rings spread from the stag's legs, the spring and every falling drop. */
 export default function Lake({ quality }: { quality: "high" | "low" }) {
   const uniforms = useMemo(
     () => ({
@@ -47,7 +58,9 @@ export default function Lake({ quality }: { quality: "high" | "low" }) {
       uAmp: { value: 0.4 },
       uHoof: { value: HOOVES.map(([x, z]) => new THREE.Vector2(...deerToWorld(x, z))) },
       uSpring: { value: new THREE.Vector2(BOTTLE_POSITION[0], BOTTLE_POSITION[2]) },
-      uDrops: { value: Array.from({ length: 6 }, () => new THREE.Vector3(0, 0, -10)) },
+      uDrops: { value: Array.from({ length: MAX_DROPS }, () => new THREE.Vector3(0, 0, -10)) },
+      uBright: { value: new THREE.Color("#fff4dc") },
+      uDark: { value: new THREE.Color("#2f4f4c") },
     }),
     [],
   );
@@ -55,43 +68,41 @@ export default function Lake({ quality }: { quality: "high" | "low" }) {
     () => new THREE.ShaderMaterial({ uniforms, vertexShader: rippleVertex, fragmentShader: rippleFragment, transparent: true, depthWrite: false }),
     [uniforms],
   );
-  const drops = useMemo(() => ({ next: 0, index: 0 }), []);
+  const drops = useMemo(() => ({ index: 0 }), []);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     uniforms.uTime.value = t;
     uniforms.uAmp.value = story.ripple * (0.4 + 0.6 * Math.min(1, intro.form));
-    // water dripping from the stag back into the lake
-    if (t > drops.next && story.reveal > 0.5) {
-      const [hx, hz] = HOOVES[Math.floor(Math.random() * HOOVES.length)];
-      const [x, z] = deerToWorld(hx + (Math.random() - 0.5) * 0.5, hz + (Math.random() - 0.5) * 0.3);
-      uniforms.uDrops.value[drops.index].set(x, z, t);
-      drops.index = (drops.index + 1) % 6;
-      drops.next = t + 0.5 + Math.random() * 0.9;
+    // every drop that lands becomes a ring
+    while (splashes.length) {
+      const drop = splashes.shift()!;
+      uniforms.uDrops.value[drops.index].set(drop.x, drop.z, drop.t);
+      drops.index = (drops.index + 1) % MAX_DROPS;
     }
   });
 
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} renderOrder={0}>
-        <planeGeometry args={[160, 160]} />
+      <mesh rotation-x={-Math.PI / 2} position={[1.5, 0, -4]} renderOrder={0}>
+        <planeGeometry args={[70, 60]} />
         <MeshReflectorMaterial
           resolution={quality === "high" ? 1024 : 512}
-          blur={[260, 70]}
-          mixBlur={0.7}
-          mixStrength={2.4}
+          blur={[90, 30]}
+          mixBlur={0.35}
+          mixStrength={1.25}
           mixContrast={1}
-          mirror={0.8}
-          depthScale={0.35}
-          minDepthThreshold={0.5}
-          maxDepthThreshold={1.3}
-          color="#a9d6f1"
-          metalness={0.2}
-          roughness={0.8}
+          mirror={0.94}
+          depthScale={0.25}
+          minDepthThreshold={0.6}
+          maxDepthThreshold={1.2}
+          color="#93bbb9"
+          metalness={0}
+          roughness={1}
         />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position-y={0.015} renderOrder={4} material={rippleMaterial}>
-        <planeGeometry args={[30, 30]} />
+      <mesh rotation-x={-Math.PI / 2} position={[0.8, 0.015, -1.2]} renderOrder={4} material={rippleMaterial}>
+        <planeGeometry args={[32, 32]} />
       </mesh>
     </group>
   );

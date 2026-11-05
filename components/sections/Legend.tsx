@@ -9,7 +9,7 @@ export default function Legend({ t }: { t: Dictionary["legend"] }) {
   return (
     <section id="legend" aria-labelledby="legend-title" className="relative">
       <header className="px-[max(20px,6vw)] pb-[6vh] pt-[18vh]">
-        <div data-reveal className="max-w-[620px]">
+        <div data-reveal className="veil max-w-[620px]">
           <p className="eyebrow">{t.eyebrow}</p>
           <h2 id="legend-title" className="mt-5 font-display text-[clamp(30px,4.2vw,62px)] font-medium leading-[1.06] tracking-[-0.02em]">
             {t.titleA}

@@ -11,7 +11,7 @@ export default function Facts({ t, facts }: { t: Dictionary["facts"]; facts: Fac
 
   return (
     <section id="facts" data-story="facts" aria-labelledby="facts-title" className="relative px-[max(14px,6vw)] py-[18vh]">
-      <div data-reveal className="mx-auto max-w-[780px] text-center">
+      <div data-reveal className="veil mx-auto max-w-[780px] text-center">
         <p className="eyebrow">{t.eyebrow}</p>
         <h2 id="facts-title" className="mt-5 font-display text-[clamp(30px,4.2vw,62px)] font-medium leading-[1.06] tracking-[-0.02em]">
           {t.titleA}

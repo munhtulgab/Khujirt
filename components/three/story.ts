@@ -40,7 +40,7 @@ export interface StoryState {
 export const STATES: Record<StoryKey, StoryState> = {
   hero:     { cx: 0.2,  cy: 1.7, cz: 8.4,  lx: 0.25, ly: 1.5, lz: -0.2, shift: 0.17,  my: -0.2,  mist: 1,    reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.35, wound: 0, heal: 0 },
   wound:    { cx: -3.4, cy: 1.9, cz: 4.4,  lx: 0.5,  ly: 1.7, lz: -1.1, shift: -0.18, my: 0.16,  mist: 0.85, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.5,  wound: 1, heal: 0 },
-  source:   { cx: 0.6,  cy: 4.4, cz: 15.5, lx: 0.5,  ly: 3.6, lz: -14,  shift: 0,     my: 0.14,  mist: 0.5,  reveal: 1, disperse: 0, bottle: 0, peaks: 1, ripple: 1,    wound: 0.4, heal: 0 },
+  source:   { cx: 0.6,  cy: 5.5, cz: 18,   lx: 0.5,  ly: 9.5, lz: -40,  shift: 0,     my: 0.1,   mist: 0.5,  reveal: 1, disperse: 0, bottle: 0, peaks: 1, ripple: 1,    wound: 0.4, heal: 0 },
   heal:     { cx: 3.6,  cy: 1.7, cz: 3.8,  lx: 0.6,  ly: 1.75, lz: -1.1, shift: -0.2, my: 0.16,  mist: 0.32, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.9,  wound: 0, heal: 1 },
   today:    { cx: 0.2,  cy: 1.7, cz: 8.0,  lx: 0.25, ly: 1.5, lz: -0.2, shift: -0.16, my: 0.12,  mist: 0.22, reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.45, wound: 0, heal: 0 },
   facts:    { cx: 0.4,  cy: 3.0, cz: 9.6,  lx: 0.4,  ly: 2.2, lz: -1.5, shift: 0,     my: 0,     mist: 0.15, reveal: 0, disperse: 1, bottle: 0, peaks: 0, ripple: 0.7,  wound: 0, heal: 0 },
@@ -64,7 +64,8 @@ export const peakLabelEls: Partial<Record<PeakId, HTMLElement | null>> = {};
 
 /* ---- scene layout ---- */
 export const DEER_SCALE = 3.2;
-export const DEER_POSITION: [number, number, number] = [0.8, 0, -1.2];
+// the stag stands in the shallows: hooves a little under the surface
+export const DEER_POSITION: [number, number, number] = [0.8, -0.26, -1.2];
 export const DEER_ROTATION = -2.6;
 export const BOTTLE_POSITION: [number, number, number] = [-0.95, 0.62, 1.35];
 
@@ -89,3 +90,11 @@ export function deerToWorld(x: number, z: number): [number, number] {
   const lz = z * DEER_SCALE;
   return [DEER_POSITION[0] + lx * c + lz * s, DEER_POSITION[2] - lx * s + lz * c];
 }
+
+/** Low evening sun, behind the left shoulder of the valley. */
+// (kept free of three.js imports: this module is also used by the page outside the 3D chunk)
+const sunLength = Math.hypot(-0.38, 0.14, -0.92);
+export const SUN_DIR: [number, number, number] = [-0.38 / sunLength, 0.14 / sunLength, -0.92 / sunLength];
+
+/** Drops of water falling from the stag; the lake turns each landing into a ring. */
+export const splashes: { x: number; z: number; t: number }[] = [];
