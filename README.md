@@ -8,7 +8,7 @@
 
 Frontend нь repo-гийн үндсэн хавтсанд (Next.js 15 App Router, React 19, Tailwind CSS v4,
 Three.js + React Three Fiber + drei, GSAP ScrollTrigger, Lenis), backend нь Python:
-Vercel дээрх Python функц (`api/index.py`) + Postgres (Neon), код нь `backend/` хавтсанд ([backend/README.md](backend/README.md)).
+Vercel дээрх Python функц (`api/index.py`) + Cloudflare D1 бааз `khujirt-db`, код нь `backend/` хавтсанд ([backend/README.md](backend/README.md)).
 
 ```
 khujirt/
@@ -46,7 +46,7 @@ npm run build && npm start
 
 Бааз холбоогүй үед ч сайт бүрэн ажиллана: бүтээгдэхүүн, тоонууд `lib/content.ts`-ээс уншигдана. Холбоо барих маягт бааз холбосны дараа ажиллана.
 
-Python API-г локал дээр: `DATABASE_URL=postgresql://… python3 backend/dev_server.py`, дараа нь `.env.local`-д
+Python API-г локал дээр: `CLOUDFLARE_API_TOKEN=… python3 backend/dev_server.py`, дараа нь `.env.local`-д
 `KHUJIRT_API_DEV_URL=http://127.0.0.1:8000` гэж бичвэл `npm run dev` дээр `/api/*` түүн рүү очно.
 
 ## Vercel дээр байршуулах
@@ -54,14 +54,17 @@ Python API-г локал дээр: `DATABASE_URL=postgresql://… python3 backen
 Тохиргоо шаардлагагүй: [vercel.com/new](https://vercel.com/new) → **Khujirt** repo → **Import** → **Deploy**.
 Төслийн нэр `khujirt` тул хаяг нь **khujirt.vercel.app** болно. `main` руу push хийх бүрт автоматаар шинэчлэгдэнэ.
 
-## Python API + Postgres бааз
+## Python API + Cloudflare D1 бааз
 
 Python API нь сайттай нэг Vercel төсөлд ажиллана: `/api/products`, `/api/facts`, `/api/contact`, `/api/health`.
+Өгөгдөл нь Cloudflare D1 дээрх `khujirt-db`-д (6 бүтээгдэхүүн, 3 тоон баримт, ирсэн зурвасууд); функц түүнд D1 HTTP API-аар хандана.
 
-Баазыг нэг удаа холбоно: Vercel → **khujirt** төсөл → **Storage** → **Create Database** → **Neon** →
-нэр `khujirt-db` → **Connect** (Production, Preview). Vercel `DATABASE_URL`-ийг өөрөө тохируулна; дараа нь **Redeploy**.
-Хүснэгт, бүтээгдэхүүний өгөгдөл (`backend/postgres/*.sql`) эхний хүсэлтээр өөрөө үүснэ.
-Шалгах: `https://khujirt.vercel.app/api/health` → `"database": "ok", "products": 6`.
+Нэг удаа:
+1. Cloudflare → My Profile → **API Tokens** → **Create Token** → **Custom token** → Permissions: **Account · D1 · Edit** → Create.
+2. Vercel → **khujirt** → Settings → **Environment Variables** → `CLOUDFLARE_API_TOKEN` = тэр token (Production, Preview) → Save → **Redeploy**.
+
+Шалгах: `https://khujirt.vercel.app/api/health` → `"database": "ok", "engine": "d1", "products": 6`.
+Cloudflare account-ийг token-оос өөрөө олно; олдохгүй бол `CLOUDFLARE_ACCOUNT_ID`-г нэмнэ.
 
 Хүсвэл (`.env.example`): `IP_HASH_SALT`, `KHUJIRT_API_URL` — өөр API, `NEXT_PUBLIC_SITE_URL` — өөр домэйн (ж: `https://khujirt.mn`).
 
@@ -70,9 +73,9 @@ Python API нь сайттай нэг Vercel төсөлд ажиллана: `/ap
 ## Агуулга засах
 
 - Текст (MN/EN): `lib/i18n.ts`
-- Бүтээгдэхүүн: Postgres `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
-- Тоон баримт: Postgres `facts` хүснэгт (`since`, `mineral_count`, `additives`)
-- Ирсэн зурвас: Postgres `contact_messages` хүснэгт (Vercel → Storage → Neon → Open in Neon → SQL Editor)
+- Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
+- Тоон баримт: D1 `facts` хүснэгт (`since`, `mineral_count`, `additives`)
+- Ирсэн зурвас: D1 `contact_messages` хүснэгт (Cloudflare → Storage & Databases → D1 → `khujirt-db` → Console)
 - 3D түүхийн камер, манан, долгион: `components/three/story.ts` → `STATES`
 - Хөл хэсгийн уриа: `lib/i18n.ts` → `footer.manifesto`; брэндийн бичлэг: `public/media/khujirt-amlalt.mp4` (дуугүй, зөвхөн дэлгэцэнд харагдах үед тоглоно, постер `khujirt-amlalt.webp`)
 

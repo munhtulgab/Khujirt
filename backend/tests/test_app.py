@@ -1,4 +1,5 @@
-"""Tests for the API logic, against SQLite built from the D1 migrations and, when
+"""Tests for the API logic, against SQLite built from the D1 migrations, against D1 over its HTTP
+API (a local stand-in, tests/fake_d1.py) and, when
 KHUJIRT_TEST_DATABASE_URL points at a scratch Postgres, against Postgres built from backend/postgres
 (the database is wiped for every test)."""
 
@@ -53,10 +54,28 @@ def postgres_db():
     return pg
 
 
-@pytest.fixture(params=["sqlite", "postgres"])
+def d1_http_db():
+    from fake_d1 import TOKEN, FakeD1
+
+    from khujirt_api.d1_http import D1Http
+
+    fake = FakeD1()
+    d1 = D1Http(TOKEN, api=fake.api)
+    d1.conn = fake.conn  # tests reach into the data directly
+    d1.messages = fake.messages
+    d1.fake = fake
+    return d1
+
+
+@pytest.fixture(params=["sqlite", "d1-http", "postgres"])
 def db(request):
     if request.param == "sqlite":
         yield SqliteDB()
+        return
+    if request.param == "d1-http":
+        d1 = d1_http_db()
+        yield d1
+        d1.fake.stop()
         return
     if not PG_URL:
         pytest.skip("set KHUJIRT_TEST_DATABASE_URL to run against Postgres")

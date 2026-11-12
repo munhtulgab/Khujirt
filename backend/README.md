@@ -1,11 +1,13 @@
-# Khujirt API — Python · Vercel · Postgres (Neon)
+# Khujirt API — Python · Vercel · Cloudflare D1
 
-Хужирт сайтын backend. Бүтээгдэхүүн, баримт тоо, холбоо барих маягтын зурвасыг Postgres (Neon) өгөгдлийн санд хадгална.
+Хужирт сайтын backend. Бүтээгдэхүүн, баримт тоо, холбоо барих маягтын зурвасыг Cloudflare D1 бааз `khujirt-db`-д хадгална.
 Сайттай нэг Vercel төсөлд Python функц (`api/index.py`) болж ажиллана; сайтын `/api/*` бүгд түүн рүү очно.
+Функц D1-д [D1 HTTP API](https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/query/)-аар хандана
+(`backend/src/khujirt_api/d1_http.py`, зөвхөн стандарт сан). Хүсвэл D1-ийн оронд Postgres ч болно.
 
 | Method | Path | Тайлбар |
 | --- | --- | --- |
-| `GET` | `/api/health` | шалгах: `database` (`ok` / `not_configured` / `error`), `products` |
+| `GET` | `/api/health` | шалгах: `database` (`ok` / `not_configured` / `error`), `engine` (`d1` / `postgres`), `products` |
 | `GET` | `/api/products?lang=mn\|en` | идэвхтэй бүтээгдэхүүнүүд, хэлээр |
 | `GET` | `/api/products/<slug>?lang=` | нэг бүтээгдэхүүн |
 | `GET` | `/api/facts` | сайтын тоон баримтууд (`since`, `mineralCount`, `additives`) |
@@ -17,59 +19,64 @@ IP-г хадгалахгүй — зөвхөн давсалсан hash, алда�
 ## Бүтэц
 
 ```
-api/index.py                 Vercel Python функц: хүсэлт → khujirt_api.handle, Postgres холболт
-requirements.txt             psycopg
+api/index.py                 Vercel Python функц: хүсэлт → khujirt_api.handle, бааз сонгох
+requirements.txt             psycopg (зөвхөн Postgres хувилбарт)
 vercel.json                  функцэд backend/src, backend/postgres-ийг багтаана
 backend/
-├── postgres/
-│   ├── 0001_init.sql        хүснэгтүүд: products, facts, contact_messages
-│   └── 0002_seed.sql        gem.mn дээрх Хужирт бүтээгдэхүүнүүд, хэмжээнүүд
+├── migrations/              D1 schema (wrangler): 0001 хүснэгт, 0002 бүтээгдэхүүн, 0003 хэмжээ — khujirt-db-д хийгдсэн
 ├── src/khujirt_api/
 │   ├── app.py               маршрут, шалгалт, CORS — цэвэр Python
-│   ├── postgres.py          Postgres adapter + migration-ийг өөрөө хийнэ
-│   └── db.py                D1 adapter (Cloudflare хувилбар)
+│   ├── d1_http.py           D1 HTTP API adapter (Vercel → khujirt-db)
+│   ├── db.py                D1 binding adapter (Cloudflare Worker хувилбар)
+│   └── postgres.py          Postgres adapter (D1-ийн оронд, заавал биш)
+├── postgres/                Postgres schema + seed (D1-тэй ижил өгөгдөл)
 ├── dev_server.py            api/index.py-г локал дээр ажиллуулна
-├── tests/                   pytest: SQLite, жинхэнэ Postgres, HTTP-ээр функц бүтнээрээ
-├── src/entry.py, wrangler.toml, migrations/   Cloudflare Worker + D1 хувилбар (заавал биш)
+├── tests/                   pytest: SQLite, D1 HTTP (fake_d1.py), жинхэнэ Postgres, HTTP-ээр функц бүтнээрээ
+├── src/entry.py, wrangler.toml   Cloudflare Worker хувилбар (заавал биш)
 └── pyproject.toml
 ```
 
-## Бааз холбох (нэг удаа)
+## D1 холбох (нэг удаа)
 
-Vercel → **khujirt** төсөл → **Storage** → **Create Database** → **Neon** → нэр `khujirt-db` → **Connect**.
-Vercel `DATABASE_URL`-ийг өөрөө нэмнэ (`POSTGRES_URL` гэх мэт нэрийг ч таньна). Дараа нь **Redeploy**.
+1. Cloudflare → My Profile → **API Tokens** → **Create Token** → **Custom token**
+   → Permissions: **Account · D1 · Edit** → Account Resources: өөрийн account → **Create Token**.
+2. Vercel → **khujirt** → Settings → **Environment Variables** → `CLOUDFLARE_API_TOKEN` (Production, Preview) → **Redeploy**.
 
-Эхний хүсэлтээр функц `backend/postgres/*.sql`-ээс ажиллаагүйг нь дарааллаар хийж `schema_migrations`-д тэмдэглэнэ
-(advisory lock-той, давхар хийгдэхгүй; баазад гараар засварласан өгөгдлийг дарахгүй).
-Шалгах: `https://khujirt.vercel.app/api/health` → `{"database": "ok", "products": 6}`.
+Account-ийг token-оос өөрөө олно (хэд байвал `khujirt-db` байгааг нь); эс бөгөөс `CLOUDFLARE_ACCOUNT_ID`.
+Өөр D1 бааз бол `D1_DATABASE_ID`. Шалгах: `https://khujirt.vercel.app/api/health` → `{"database": "ok", "engine": "d1", "products": 6}`.
 
-Шинэ migration: `backend/postgres/0003_….sql` нэмээд push хийхэд дараагийн хүсэлтээр хийгдэнэ.
+D1 schema-г wrangler-аар удирдана: шинэ `backend/migrations/0004_….sql` → `npx wrangler d1 migrations apply khujirt-db --remote`.
+
+### Postgres хувилбар
+
+`CLOUDFLARE_API_TOKEN` байхгүй, `DATABASE_URL` байвал (Vercel → Storage → Neon) Postgres ашиглана;
+`backend/postgres/*.sql` эхний хүсэлтээр өөрөө хийгдэнэ (advisory lock, `schema_migrations`).
 
 ## Локал дээр
 
 ```bash
-DATABASE_URL=postgresql://… python3 backend/dev_server.py        # http://127.0.0.1:8000/api/health
+CLOUDFLARE_API_TOKEN=… python3 backend/dev_server.py             # http://127.0.0.1:8000/api/health
 # .env.local: KHUJIRT_API_DEV_URL=http://127.0.0.1:8000  →  npm run dev дээр /api/* энд очно
 
 cd backend
-python -m pytest                                                  # SQLite
+python -m pytest                                                  # SQLite + D1 HTTP (fake)
 KHUJIRT_TEST_DATABASE_URL=postgresql://…/scratch python -m pytest # + Postgres (баазыг тест бүрт цэвэрлэнэ!)
 ```
 
 ## Өгөгдөл засах
 
-Vercel → Storage → `khujirt-db` → **Open in Neon** → SQL Editor:
+Cloudflare → Storage & Databases → D1 → `khujirt-db` → **Console**, эсвэл `npx wrangler d1 execute khujirt-db --remote --command "…"`:
 
 ```sql
 -- бүтээгдэхүүнийг түр нуух
 UPDATE products SET active = 0 WHERE slug = 'khujirt-yoda';
 -- ирсэн зурвасууд
-SELECT id, name, email, phone, message, to_timestamp(created_at) FROM contact_messages ORDER BY id DESC LIMIT 20;
+SELECT id, name, email, phone, message, datetime(created_at, 'unixepoch') FROM contact_messages ORDER BY id DESC LIMIT 20;
 ```
 
 Сайт бүтээгдэхүүнийг 10 минут тутамд шинэчилнэ (ISR). API ажиллахгүй үед сайт `lib/content.ts` доторх нөөц өгөгдлөөр ажилласаар байна.
 
-## Cloudflare хувилбар (заавал биш)
+## Cloudflare Worker хувилбар (заавал биш)
 
-Ижил код Cloudflare Worker + D1 дээр ч ажиллана (`src/entry.py`, `wrangler.toml`, `migrations/`; D1 бааз `khujirt-db` үүссэн):
+Ижил код Cloudflare Worker дээр D1 binding-аар ч ажиллана (`src/entry.py`, `wrangler.toml`):
 `npx wrangler login && npx wrangler secret put IP_HASH_SALT && npx wrangler deploy`, дараа нь сайт дээр `KHUJIRT_API_URL`.

@@ -1,9 +1,13 @@
-"""Khujirt API as a Vercel Python function, on Postgres (Neon).
+"""Khujirt API as a Vercel Python function.
 
 Every /api/* request of the site is rewritten here (next.config.ts) and handled by the same
-code as the Cloudflare Worker: backend/src/khujirt_api. The database comes from DATABASE_URL
-(set automatically when a Neon database is connected to the Vercel project); its tables and
-seed data are created on the first request from backend/postgres/*.sql.
+code as the Cloudflare Worker: backend/src/khujirt_api.
+
+Database, in this order:
+  1. Cloudflare D1 `khujirt-db` over the D1 HTTP API, when CLOUDFLARE_API_TOKEN (Account · D1 · Edit)
+     is set. Optional: CLOUDFLARE_ACCOUNT_ID (found from the token otherwise), D1_DATABASE_ID.
+     The schema is managed with wrangler (backend/migrations).
+  2. Postgres, when DATABASE_URL is set; its tables are created from backend/postgres/*.sql.
 """
 
 from __future__ import annotations
@@ -21,18 +25,31 @@ sys.path.insert(0, str(ROOT / "backend" / "src"))
 
 from khujirt_api import Request, Response, Settings, handle  # noqa: E402
 from khujirt_api.app import MAX_BODY_BYTES  # noqa: E402
-from khujirt_api.postgres import Postgres, database_url  # noqa: E402
+from khujirt_api.d1_http import D1Http, d1_token  # noqa: E402
 
 MIGRATIONS = ROOT / "backend" / "postgres"
 HEADERS = ("content-type", "origin", "user-agent", "x-real-ip", "x-forwarded-for", "x-proxy-key")
 ENTRY_PATHS = ("/api", "/api/index", "/api/index.py")
 
 
+def _database():
+    d1 = D1Http.from_env(os.environ.get)
+    if d1 is not None:
+        return d1, "d1"
+    from khujirt_api.postgres import Postgres, database_url  # psycopg only when Postgres is used
+
+    url = database_url(os.environ.get)
+    return (Postgres(url, MIGRATIONS), "postgres") if url else (None, "")
+
+
+def _secret() -> str:
+    return d1_token(os.environ.get) or os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL") or ""
+
+
 def _settings() -> Settings:
     base = Settings.from_env(os.environ.get)
-    url = database_url(os.environ.get)
-    # Without an explicit IP_HASH_SALT, derive a stable secret from the (private) connection string.
-    salt = base.ip_hash_salt or hashlib.sha256(f"khujirt-ip:{url}".encode()).hexdigest()
+    # Without an explicit IP_HASH_SALT, derive a stable salt from the (private) database credential.
+    salt = base.ip_hash_salt or hashlib.sha256(f"khujirt-ip:{_secret()}".encode()).hexdigest()
     return Settings(
         allowed_origins=base.allowed_origins,
         ip_hash_salt=salt,
@@ -44,8 +61,7 @@ def _settings() -> Settings:
 
 
 SETTINGS = _settings()
-_URL = database_url(os.environ.get)
-DB = Postgres(_URL, MIGRATIONS) if _URL else None
+DB, DB_KIND = _database()
 
 
 def _route(raw_path: str) -> tuple[str, dict[str, str]]:
@@ -64,11 +80,12 @@ def _database_status() -> dict[str, object]:
     if DB is None:
         return {"database": "not_configured"}
     try:
-        row = DB.conn.execute("SELECT COUNT(*) AS n FROM products WHERE active = 1").fetchone()
-        return {"database": "ok", "products": int(row["n"]) if row else 0}
-    except Exception:  # details stay in the logs
+        rows = asyncio.run(DB.all("SELECT COUNT(*) AS n FROM products WHERE active = ?", 1))
+        return {"database": "ok", "engine": DB_KIND, "products": int(rows[0]["n"]) if rows else 0}
+    except Exception as err:  # the reason goes to the function logs, not to the visitor
+        print(f"khujirt-api: database check failed: {err}", file=sys.stderr)
         DB.close()
-        return {"database": "error"}
+        return {"database": "error", "engine": DB_KIND}
 
 
 class handler(BaseHTTPRequestHandler):

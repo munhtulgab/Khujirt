@@ -10,16 +10,23 @@ from pathlib import Path
 
 import pytest
 
+from fake_d1 import ACCOUNT, TOKEN, FakeD1
 from test_app import PG_MIGRATIONS, PG_URL, SqliteDB, call, postgres_db
 
 ENTRY = Path(__file__).resolve().parents[2] / "api" / "index.py"
 
 
-def load_entry(monkeypatch, url):
-    for name in ("DATABASE_URL", "POSTGRES_URL", "NEON_DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL_NON_POOLING"):
+ENV = ("DATABASE_URL", "POSTGRES_URL", "NEON_DATABASE_URL", "DATABASE_URL_UNPOOLED", "POSTGRES_URL_NON_POOLING",
+       "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_D1_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID")
+
+
+def load_entry(monkeypatch, url="", env=None):
+    for name in ENV:
         monkeypatch.delenv(name, raising=False)
     if url:
         monkeypatch.setenv("DATABASE_URL", url)
+    for name, value in (env or {}).items():
+        monkeypatch.setenv(name, value)
     spec = importlib.util.spec_from_file_location("khujirt_vercel_entry_test", ENTRY)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -68,7 +75,7 @@ def test_function_on_postgres(server):
     base, _ = server
     # first request on an empty database creates the tables and the products
     status, data, _ = fetch(base, "/api/health")
-    assert status == 200 and data == {"ok": True, "service": "khujirt-api", "database": "ok", "products": 6}
+    assert status == 200 and data == {"ok": True, "service": "khujirt-api", "database": "ok", "engine": "postgres", "products": 6}
 
     # the rewrite passes the original path as _path; both forms reach the same route
     for path in ("/api/products?lang=en", "/api/?_path=products&lang=en"):
@@ -108,3 +115,55 @@ def test_migrations_run_once_and_match_d1():
         assert call(pg, "GET", "/api/facts").data == call(SqliteDB(), "GET", "/api/facts").data
     finally:
         pg.close()
+
+
+@pytest.fixture
+def d1_server(monkeypatch):
+    """The function as configured on Vercel for D1: only the token is set, plus the stand-in API address."""
+    fake = FakeD1(accounts=("other-account", ACCOUNT))
+    import khujirt_api.d1_http as d1_http
+
+    monkeypatch.setattr(d1_http, "API", fake.api)
+    module = load_entry(monkeypatch, env={"CLOUDFLARE_API_TOKEN": TOKEN})
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), module.handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    yield f"http://127.0.0.1:{httpd.server_address[1]}", fake
+    httpd.shutdown()
+    fake.stop()
+
+
+def test_function_on_d1(d1_server):
+    base, fake = d1_server
+    status, data, _ = fetch(base, "/api/health")
+    assert status == 200 and data == {"ok": True, "service": "khujirt-api", "database": "ok", "engine": "d1", "products": 6}
+    # the account was found from the token: the one of two that holds khujirt-db
+    assert ("GET", "/client/v4/accounts?per_page=50") in fake.requests
+
+    status, data, _ = fetch(base, "/api/?_path=products&lang=mn")
+    assert status == 200 and [p["slug"] for p in data["products"]][:2] == ["khujirt", "khujirt-bombolog"]
+    assert data["products"][0]["volumes"] == ["330 мл", "500 мл", "1.5 л"]
+    assert fetch(base, "/api/facts")[1] == {"facts": {"since": 2013, "mineralCount": 5, "additives": 0}}
+
+    msg = {"name": "Сараа", "email": "saraa@example.mn", "message": "Хужирт ус захиалах гэсэн юм.", "locale": "mn"}
+    headers = {"content-type": "application/json", "x-real-ip": "203.0.113.20"}
+    assert fetch(base, "/api/contact", "POST", msg, headers)[0] == 201
+    [row] = fake.messages()
+    assert row["name"] == "Сараа" and row["phone"] is None and "203.0.113.20" not in json.dumps(row)
+
+
+def test_d1_bad_token_is_reported_without_details(monkeypatch):
+    fake = FakeD1()
+    import khujirt_api.d1_http as d1_http
+
+    monkeypatch.setattr(d1_http, "API", fake.api)
+    module = load_entry(monkeypatch, env={"CLOUDFLARE_API_TOKEN": "wrong"})
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), module.handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    base = f"http://127.0.0.1:{httpd.server_address[1]}"
+    try:
+        assert fetch(base, "/api/health")[1]["database"] == "error"
+        status, data, _ = fetch(base, "/api/products")
+        assert status == 500 and data == {"error": "server_error"}
+    finally:
+        httpd.shutdown()
+        fake.stop()
