@@ -24,7 +24,22 @@ TOKEN_VARIABLES = ("CLOUDFLARE_D1_TOKEN", "CLOUDFLARE_API_TOKEN")
 
 
 class D1HttpError(RuntimeError):
-    pass
+    """``reason`` is a short code that is safe to show (no token, no account id)."""
+
+    def __init__(self, message: str, reason: str = "error"):
+        super().__init__(message)
+        self.reason = reason
+
+
+def _reason(status: int, payload: Any) -> str:
+    codes = {e.get("code") for e in (payload.get("errors") or []) if isinstance(e, dict)} if isinstance(payload, dict) else set()
+    if status in (401, 403) or codes & {9106, 9109, 10000, 10001}:
+        return "token_rejected"
+    if status == 404 or 7404 in codes:
+        return "database_not_found"
+    if status == 429:
+        return "rate_limited"
+    return "query_failed" if status < 500 else "cloudflare_unavailable"
 
 
 def d1_token(get: Callable[[str], Optional[str]]) -> str:
@@ -84,17 +99,25 @@ class D1Http:
                 payload = json.loads(err.read() or b"{}")
             except ValueError:
                 payload = {}
-            raise D1HttpError(f"{method} {path.split('?')[0]} → HTTP {err.code}: {_messages(payload)}") from None
+            raise D1HttpError(
+                f"{method} {path.split('?')[0]} → HTTP {err.code}: {_messages(payload)}", _reason(err.code, payload)
+            ) from None
         except (urllib.error.URLError, TimeoutError, ValueError) as err:
-            raise D1HttpError(f"{method} {path.split('?')[0]} failed: {err}") from None
+            raise D1HttpError(f"{method} {path.split('?')[0]} failed: {err}", "network") from None
         if not payload.get("success", False):
-            raise D1HttpError(f"{method} {path.split('?')[0]}: {_messages(payload)}")
+            raise D1HttpError(f"{method} {path.split('?')[0]}: {_messages(payload)}", _reason(200, payload))
         return payload.get("result")
 
     def _account_id(self) -> str:
         if self._account:
             return self._account
-        accounts = self._call("GET", "/accounts?per_page=50") or []
+        try:
+            accounts = self._call("GET", "/accounts?per_page=50") or []
+        except D1HttpError as err:
+            if err.reason == "network":
+                raise
+            # a token limited to D1 may not be allowed to list accounts
+            raise D1HttpError(f"cannot list accounts ({err}); set CLOUDFLARE_ACCOUNT_ID", "account_id_needed") from None
         ids = [a.get("id") for a in accounts if isinstance(a, dict) and a.get("id")]
         if len(ids) == 1:
             self._account = ids[0]
@@ -106,7 +129,9 @@ class D1Http:
                 continue
             self._account = account
             return account
-        raise D1HttpError("no Cloudflare account with this D1 database is visible to the token; set CLOUDFLARE_ACCOUNT_ID")
+        raise D1HttpError(
+            "no Cloudflare account with this D1 database is visible to the token; set CLOUDFLARE_ACCOUNT_ID", "account_id_needed"
+        )
 
     def _query(self, sql: str, params: tuple[Any, ...]) -> list[dict[str, Any]]:
         if any(p is None for p in params):
@@ -122,7 +147,7 @@ class D1Http:
             if not isinstance(statement, dict):
                 continue
             if statement.get("success") is False:
-                raise D1HttpError(f"query failed: {_messages(statement)}")
+                raise D1HttpError(f"query failed: {_messages(statement)}", "query_failed")
             rows.extend(dict(r) for r in statement.get("results") or [] if isinstance(r, dict))
         return rows
 

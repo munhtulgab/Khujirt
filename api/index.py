@@ -101,10 +101,10 @@ def _database_status() -> dict[str, object]:
     try:
         rows = asyncio.run(DB.all("SELECT COUNT(*) AS n FROM products WHERE active = ?", 1))
         return {"database": "ok", "engine": DB_KIND, "products": int(rows[0]["n"]) if rows else 0}
-    except Exception as err:  # the reason goes to the function logs, not to the visitor
+    except Exception as err:  # full details go to the function logs; the visitor gets a short code
         print(f"khujirt-api: database check failed: {err}", file=sys.stderr)
         DB.close()
-        return {"database": "error", "engine": DB_KIND}
+        return {"database": "error", "engine": DB_KIND, "reason": getattr(err, "reason", "error")}
 
 
 class handler(BaseHTTPRequestHandler):

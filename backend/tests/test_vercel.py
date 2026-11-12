@@ -161,7 +161,9 @@ def test_d1_bad_token_is_reported_without_details(monkeypatch):
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{httpd.server_address[1]}"
     try:
-        assert fetch(base, "/api/health")[1]["database"] == "error"
+        health = fetch(base, "/api/health")[1]
+        assert health["database"] == "error" and health["reason"] in ("token_rejected", "account_id_needed")
+        assert "wrong" not in json.dumps(health)
         status, data, _ = fetch(base, "/api/products")
         assert status == 500 and data == {"error": "server_error"}
     finally:
@@ -202,3 +204,47 @@ def test_not_found_names_the_route(d1_server):
     # a stripped mount prefix still reaches the right routes
     assert fetch(base, "/health")[1]["database"] == "ok"
     assert len(fetch(base, "/products?lang=en")[1]["products"]) == 6
+
+
+def _d1_entry(monkeypatch, env):
+    fake = FakeD1()
+    import khujirt_api.d1_http as d1_http
+
+    monkeypatch.setattr(d1_http, "API", fake.api)
+    module = load_entry(monkeypatch, env=env)
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), module.handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{httpd.server_address[1]}", fake, httpd
+
+
+@pytest.mark.parametrize(
+    "env, reason",
+    [
+        ({"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": "acc-wrong"}, "database_not_found"),
+        ({"CLOUDFLARE_API_TOKEN": TOKEN, "D1_DATABASE_ID": "00000000-0000-0000-0000-000000000000"}, "database_not_found"),
+        ({"CLOUDFLARE_API_TOKEN": TOKEN, "CLOUDFLARE_ACCOUNT_ID": ACCOUNT}, None),
+    ],
+)
+def test_d1_health_reasons(monkeypatch, env, reason):
+    base, fake, httpd = _d1_entry(monkeypatch, env)
+    try:
+        health = fetch(base, "/api/health")[1]
+        if reason is None:
+            assert health["database"] == "ok" and health["products"] == 6
+            assert not any(path.startswith("/client/v4/accounts?") for _, path in fake.requests)  # no lookup needed
+        else:
+            assert health["database"] == "error" and health["reason"] == reason
+    finally:
+        httpd.shutdown()
+        fake.stop()
+
+
+def test_d1_token_that_cannot_list_accounts(monkeypatch):
+    base, fake, httpd = _d1_entry(monkeypatch, {"CLOUDFLARE_API_TOKEN": TOKEN})
+    fake.accounts = []  # what a token limited to D1 sees
+    try:
+        health = fetch(base, "/api/health")[1]
+        assert health["database"] == "error" and health["reason"] == "account_id_needed"
+    finally:
+        httpd.shutdown()
+        fake.stop()
