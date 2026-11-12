@@ -18,6 +18,7 @@ import os
 import sys
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from typing import Mapping, Optional
 from urllib.parse import parse_qsl, urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,14 +65,32 @@ SETTINGS = _settings()
 DB, DB_KIND = _database()
 
 
-def _route(raw_path: str) -> tuple[str, dict[str, str]]:
-    """The request path and query. The rewrite also passes the original path as ``_path``."""
+def _route(raw_path: str, root: str = "", headers: Optional[Mapping[str, str]] = None) -> tuple[str, dict[str, str]]:
+    """The API path (always /api/...) and query, however the platform hands the request over.
+
+    The request can arrive as the original path (/api/products), as this function's own path with the
+    original one in the query (/api/index?_path=products, from the rewrite in next.config.ts), or with
+    the function's mount prefix taken off by the runtime (/products, root "/api").
+    """
     parts = urlsplit(raw_path)
     query = dict(parse_qsl(parts.query, keep_blank_values=True))
     routed = query.pop("_path", None)
-    path = parts.path
-    if routed is not None and path.rstrip("/") in ENTRY_PATHS:
-        path = "/api/" + routed.lstrip("/")
+    named = query.pop("path", None)  # Next.js passes the :path* segment under its own name too
+
+    path = parts.path or "/"
+    if not path.startswith("/"):
+        path = "/" + path
+    if root and root != "/":
+        path = root.rstrip("/") + path
+    if path != "/api" and not path.startswith("/api/"):
+        path = "/api" + path  # a stripped mount prefix
+    if path.rstrip("/") in ENTRY_PATHS:
+        target = routed if routed is not None else named
+        if target is None and headers is not None:
+            # Vercel also sends the captures of the matched route
+            matches = dict(parse_qsl(headers.get("x-now-route-matches") or "", keep_blank_values=True))
+            target = matches.get("path") or matches.get("1")
+        path = "/api/" + (target or "").lstrip("/")
     return path, query
 
 
@@ -90,7 +109,7 @@ def _database_status() -> dict[str, object]:
 
 class handler(BaseHTTPRequestHandler):
     def _serve(self) -> None:
-        path, query = _route(self.path)
+        path, query = _route(self.path, getattr(self, "_vc_service_root_path", "") or "", self.headers)
         method = self.command.upper()
         headers = {name: self.headers[name] for name in HEADERS if self.headers.get(name) is not None}
         length = int(self.headers.get("content-length") or 0)
@@ -103,6 +122,8 @@ class handler(BaseHTTPRequestHandler):
             result = asyncio.run(handle(req, DB, SETTINGS))  # type: ignore[arg-type]
         if path.rstrip("/") in ("/api", "/api/health") and result.status == 200:
             result.data = {**result.data, **_database_status()}
+        if result.status == 404 and isinstance(result.data, dict):
+            result.data = {**result.data, "path": path[:200]}  # which route was looked for
 
         payload = b"" if method == "HEAD" or result.status == 204 else result.text().encode("utf-8")
         self.send_response(result.status)

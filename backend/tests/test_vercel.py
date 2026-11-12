@@ -167,3 +167,38 @@ def test_d1_bad_token_is_reported_without_details(monkeypatch):
     finally:
         httpd.shutdown()
         fake.stop()
+
+
+@pytest.mark.parametrize(
+    "raw, root, headers, expected",
+    [
+        ("/api/health", "", {}, "/api/health"),
+        ("/api/products?lang=en", "", {}, "/api/products"),
+        ("/api/index?_path=products/khujirt&path=products/khujirt&lang=en", "", {}, "/api/products/khujirt"),
+        ("/api/?_path=facts", "", {}, "/api/facts"),
+        ("/api/index?path=admin/me", "", {}, "/api/admin/me"),
+        ("/api/index?_path=&path=", "", {}, "/api/"),
+        ("/health", "/api", {}, "/api/health"),  # the runtime took the mount prefix off
+        ("/health", "", {}, "/api/health"),
+        ("/index?_path=admin/login", "/api", {}, "/api/admin/login"),
+        ("/", "/api", {}, "/api/"),
+        ("/api/index", "", {"x-now-route-matches": "1=contact&rscsuff="}, "/api/contact"),
+        ("/api/index", "", {}, "/api/"),
+    ],
+)
+def test_route_forms(monkeypatch, raw, root, headers, expected):
+    module = load_entry(monkeypatch)
+    path, query = module._route(raw, root, headers)
+    assert path == expected
+    assert "_path" not in query and "path" not in query
+    if "lang=en" in raw:
+        assert query["lang"] == "en"
+
+
+def test_not_found_names_the_route(d1_server):
+    base, _ = d1_server
+    status, data, _ = fetch(base, "/api/index?_path=nothing-here")
+    assert status == 404 and data == {"error": "not_found", "path": "/api/nothing-here"}
+    # a stripped mount prefix still reaches the right routes
+    assert fetch(base, "/health")[1]["database"] == "ok"
+    assert len(fetch(base, "/products?lang=en")[1]["products"]) == 6
