@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "backend/{src,postgres}/**",
+      "excludeFiles": "{.next,node_modules,public,app,components,lib,.github}/**",
+      "maxDuration": 15
+    }
+  }
+}

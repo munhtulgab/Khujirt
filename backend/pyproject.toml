@@ -1,16 +1,17 @@
 [project]
 name = "khujirt-api"
 version = "1.0.0"
-description = "Khujirt API: Python Cloudflare Worker with a D1 database"
+description = "Khujirt API: Python on Vercel (Postgres) or Cloudflare Workers (D1)"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = []  # the Worker needs none; the Vercel function installs requirements.txt
 
 [dependency-groups]
 dev = [
   "workers-py",
   "workers-runtime-sdk",
   "pytest>=8",
+  "psycopg[binary]>=3.2,<4",
 ]
 
 [tool.pytest.ini_options]

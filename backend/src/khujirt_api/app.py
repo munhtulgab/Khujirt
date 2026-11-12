@@ -1,7 +1,8 @@
 """Request handling for the Khujirt API.
 
-Plain Python with no Cloudflare imports: the Worker (``src/entry.py``) adapts the runtime's request,
-environment and D1 binding to these types, and the tests run the same code against SQLite.
+Plain Python with no platform imports. Two thin adapters run it: the Vercel function
+(``api/index.py`` at the repository root, on Postgres) and the Cloudflare Worker (``src/entry.py``,
+on D1). The tests run the same code against SQLite and Postgres.
 
 Routes
   GET  /api/health              service check
@@ -36,7 +37,8 @@ CONTROL_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 class Database(Protocol):
-    """What the handlers need from D1. Parameters must never be ``None`` (D1 rejects undefined)."""
+    """What the handlers need from the database. SQL uses ``?`` placeholders; parameters are never
+    ``None`` (D1 rejects undefined), so optional values are bound as '' and wrapped in NULLIF."""
 
     async def all(self, sql: str, *params: Any) -> list[dict[str, Any]]: ...
 
@@ -57,6 +59,8 @@ class Settings:
     proxy_key: str = ""
     rate_limit: int = 5
     rate_window: int = 3600
+    # Header holding the visitor IP, set by the platform's edge (Cloudflare: cf-connecting-ip, Vercel: x-real-ip).
+    client_ip_header: str = "cf-connecting-ip"
 
     @classmethod
     def from_env(cls, get: Callable[[str], Optional[str]]) -> "Settings":
@@ -166,12 +170,12 @@ async def get_facts(db: Database) -> Response:
 # ---------------------------------------------------------------- contact form
 
 
-def _client_ip(req: Request, trusted_proxy: bool) -> str:
+def _client_ip(req: Request, trusted_proxy: bool, header: str) -> str:
     if trusted_proxy:
         forwarded = req.headers.get("x-forwarded-for", "").split(",")[0].strip()
         if forwarded:
             return forwarded
-    return req.headers.get("cf-connecting-ip", "").strip() or "unknown"
+    return req.headers.get(header, "").strip() or "unknown"
 
 
 def _hash_ip(ip: str, salt: str) -> str:
@@ -221,7 +225,7 @@ async def create_contact(req: Request, db: Database, settings: Settings, now: fl
     if invalid:
         return _error(400, "invalid", fields=sorted(invalid))
 
-    ip_hash = _hash_ip(_client_ip(req, trusted_proxy), settings.ip_hash_salt)
+    ip_hash = _hash_ip(_client_ip(req, trusted_proxy, settings.client_ip_header), settings.ip_hash_salt)
     rows = await db.all(
         "SELECT COUNT(*) AS n FROM contact_messages WHERE ip_hash = ? AND created_at > ?",
         ip_hash,

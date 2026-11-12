@@ -2,10 +2,18 @@
 import { FACTS, PRODUCTS, localizeProduct, type Facts, type Product, type ProductCategory, type Packaging } from "./content";
 import type { Locale } from "./i18n";
 
-import endpoint from "./api-endpoint.json";
+/**
+ * Where the Python API answers: an explicit KHUJIRT_API_URL, else this site's own /api on Vercel
+ * (the production domain in production, the deployment's own address in previews).
+ */
+function apiBase() {
+  if (process.env.KHUJIRT_API_URL) return process.env.KHUJIRT_API_URL;
+  const host =
+    process.env.VERCEL_ENV === "production" ? process.env.VERCEL_PROJECT_PRODUCTION_URL : process.env.VERCEL_URL;
+  return host ? `https://${host}` : "";
+}
 
-/** The API address: an env override, else the address the deploy workflow recorded. */
-const API_URL = (process.env.KHUJIRT_API_URL || endpoint.url || "").replace(/\/$/, "");
+const API_URL = apiBase().replace(/\/$/, "");
 const CATEGORIES: ProductCategory[] = ["still", "sparkling", "iodine", "flavoured"];
 const PACKAGING: Packaging[] = ["pet", "glass"];
 

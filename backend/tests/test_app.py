@@ -1,7 +1,10 @@
-"""Tests for the API logic, with an in-memory SQLite database built from the real D1 migrations."""
+"""Tests for the API logic, against SQLite built from the D1 migrations and, when
+KHUJIRT_TEST_DATABASE_URL points at a scratch Postgres, against Postgres built from backend/postgres
+(the database is wiped for every test)."""
 
 import asyncio
 import json
+import os
 import sqlite3
 from pathlib import Path
 
@@ -10,6 +13,8 @@ import pytest
 from khujirt_api import Request, Settings, handle
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "migrations"
+PG_MIGRATIONS = Path(__file__).resolve().parents[1] / "postgres"
+PG_URL = os.environ.get("KHUJIRT_TEST_DATABASE_URL", "")
 NOW = 1_800_000_000.0
 
 
@@ -35,9 +40,29 @@ class SqliteDB:
         return [dict(r) for r in self.conn.execute("SELECT * FROM contact_messages ORDER BY id").fetchall()]
 
 
-@pytest.fixture
-def db():
-    return SqliteDB()
+def postgres_db():
+    from khujirt_api.postgres import Postgres
+
+    import psycopg
+
+    with psycopg.connect(PG_URL, autocommit=True) as admin:
+        admin.execute("DROP SCHEMA public CASCADE")
+        admin.execute("CREATE SCHEMA public")
+    pg = Postgres(PG_URL, PG_MIGRATIONS)
+    pg.messages = lambda: [dict(r) for r in pg.conn.execute("SELECT * FROM contact_messages ORDER BY id").fetchall()]
+    return pg
+
+
+@pytest.fixture(params=["sqlite", "postgres"])
+def db(request):
+    if request.param == "sqlite":
+        yield SqliteDB()
+        return
+    if not PG_URL:
+        pytest.skip("set KHUJIRT_TEST_DATABASE_URL to run against Postgres")
+    pg = postgres_db()
+    yield pg
+    pg.close()
 
 
 SETTINGS = Settings(allowed_origins=("https://khujirt.vercel.app",), ip_hash_salt="pepper", proxy_key="", rate_limit=3, rate_window=3600)

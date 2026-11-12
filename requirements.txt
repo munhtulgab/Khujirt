@@ -1,0 +1,2 @@
+# Python dependencies of the Vercel function api/index.py (the Khujirt API, backend/src/khujirt_api).
+psycopg[binary]>=3.2,<4

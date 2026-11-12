@@ -7,14 +7,13 @@
 ## Бүтэц
 
 Frontend нь repo-гийн үндсэн хавтсанд (Next.js 15 App Router, React 19, Tailwind CSS v4,
-Three.js + React Three Fiber + drei, GSAP ScrollTrigger, Lenis), backend нь `backend/` хавтсанд
-(Python Cloudflare Worker + D1, [backend/README.md](backend/README.md)).
+Three.js + React Three Fiber + drei, GSAP ScrollTrigger, Lenis), backend нь Python:
+Vercel дээрх Python функц (`api/index.py`) + Postgres (Neon), код нь `backend/` хавтсанд ([backend/README.md](backend/README.md)).
 
 ```
 khujirt/
 ├── app/
 │   ├── [lang]/layout.tsx · page.tsx   /mn, /en хуудас, SEO metadata, JSON-LD
-│   ├── api/contact/route.ts           маягт → Python API proxy
 │   ├── sitemap.ts · robots.ts · manifest.ts · icon.svg · apple-icon.png
 │   └── globals.css                    брэндийн өнгө (@theme), бүрэлдэхүүн
 ├── components/
@@ -28,7 +27,9 @@ khujirt/
 ├── lib/            i18n.ts (MN/EN текст), content.ts (бүтээгдэхүүн), api.ts, site.ts
 ├── public/         models/deer.glb (221 KB, meshopt), models/stag-points.bin,
 │                   brand/khujirt-logo.webp, og/ (хуваалцах зураг)
-└── backend/        Python API (Cloudflare Worker + D1)
+├── api/index.py    Python API — Vercel функц (/api/* бүгд энд ирнэ)
+├── requirements.txt · vercel.json   Python хамаарал, функцийн тохиргоо
+└── backend/        Python API-ийн код, Postgres migration (postgres/), тест
 ```
 
 ## Өнгө
@@ -43,32 +44,35 @@ npm run dev            # http://localhost:3000 → /mn
 npm run build && npm start
 ```
 
-Backend-гүйгээр ч бүрэн ажиллана: бүтээгдэхүүн, тоонууд `lib/content.ts`-ээс уншигдана. Холбоо барих маягт API тохируулсны дараа ажиллана.
+Бааз холбоогүй үед ч сайт бүрэн ажиллана: бүтээгдэхүүн, тоонууд `lib/content.ts`-ээс уншигдана. Холбоо барих маягт бааз холбосны дараа ажиллана.
+
+Python API-г локал дээр: `DATABASE_URL=postgresql://… python3 backend/dev_server.py`, дараа нь `.env.local`-д
+`KHUJIRT_API_DEV_URL=http://127.0.0.1:8000` гэж бичвэл `npm run dev` дээр `/api/*` түүн рүү очно.
 
 ## Vercel дээр байршуулах
 
 Тохиргоо шаардлагагүй: [vercel.com/new](https://vercel.com/new) → **Khujirt** repo → **Import** → **Deploy**.
 Төслийн нэр `khujirt` тул хаяг нь **khujirt.vercel.app** болно. `main` руу push хийх бүрт автоматаар шинэчлэгдэнэ.
 
-Vercel дээр env тохируулах шаардлагагүй: API-ийн хаяг `lib/api-endpoint.json`-д бичигдэнэ.
-Хүсвэл (`.env.example`): `KHUJIRT_API_URL` — өөр API хаяг, `NEXT_PUBLIC_SITE_URL` — өөр домэйн (ж: `https://khujirt.mn`).
+## Python API + Postgres бааз
 
-## Cloudflare D1 + Python API
+Python API нь сайттай нэг Vercel төсөлд ажиллана: `/api/products`, `/api/facts`, `/api/contact`, `/api/health`.
 
-D1 бааз `khujirt-db` үүссэн, migration-ууд хийгдсэн (ID нь `backend/wrangler.toml`-д).
-Worker-ийг GitHub Actions байршуулна (`.github/workflows/deploy-api.yml`): `backend/` өөрчлөгдөх бүрт
-тест → D1 migration → `wrangler deploy` → `IP_HASH_SALT` (анх удаа) → шалгалт → хаягийг `lib/api-endpoint.json`-д бичнэ.
+Баазыг нэг удаа холбоно: Vercel → **khujirt** төсөл → **Storage** → **Create Database** → **Neon** →
+нэр `khujirt-db` → **Connect** (Production, Preview). Vercel `DATABASE_URL`-ийг өөрөө тохируулна; дараа нь **Redeploy**.
+Хүснэгт, бүтээгдэхүүний өгөгдөл (`backend/postgres/*.sql`) эхний хүсэлтээр өөрөө үүснэ.
+Шалгах: `https://khujirt.vercel.app/api/health` → `"database": "ok", "products": 6`.
 
-Нэг удаа: repo → Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`
-(Cloudflare → My Profile → API Tokens → **Edit Cloudflare Workers** загвар + **Account · D1 · Edit**).
+Хүсвэл (`.env.example`): `IP_HASH_SALT`, `KHUJIRT_API_URL` — өөр API, `NEXT_PUBLIC_SITE_URL` — өөр домэйн (ж: `https://khujirt.mn`).
 
 Дэлгэрэнгүй: [backend/README.md](backend/README.md).
 
 ## Агуулга засах
 
 - Текст (MN/EN): `lib/i18n.ts`
-- Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
-- Тоон баримт: D1 `facts` хүснэгт (`since`, `mineral_count`, `additives`)
+- Бүтээгдэхүүн: Postgres `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
+- Тоон баримт: Postgres `facts` хүснэгт (`since`, `mineral_count`, `additives`)
+- Ирсэн зурвас: Postgres `contact_messages` хүснэгт (Vercel → Storage → Neon → Open in Neon → SQL Editor)
 - 3D түүхийн камер, манан, долгион: `components/three/story.ts` → `STATES`
 - Хөл хэсгийн уриа: `lib/i18n.ts` → `footer.manifesto`; брэндийн бичлэг: `public/media/khujirt-amlalt.mp4` (дуугүй, зөвхөн дэлгэцэнд харагдах үед тоглоно, постер `khujirt-amlalt.webp`)
 

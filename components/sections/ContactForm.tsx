@@ -2,14 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import type { Dictionary, Locale } from "@/lib/i18n";
-import endpoint from "@/lib/api-endpoint.json";
 
-/**
- * Messages go straight to the API (it allows this site's origin and sees the visitor's own IP for
- * rate limiting). Without a recorded API address the same-origin /api/contact proxy is used.
- */
-const API = (process.env.NEXT_PUBLIC_KHUJIRT_API_URL || endpoint.url || "").replace(/\/$/, "");
-const CONTACT_URL = API ? `${API}/api/contact` : "/api/contact";
+/** The Python API on the same site (api/index.py) stores the message in Postgres. */
+const CONTACT_URL = "/api/contact";
 
 type Status = "idle" | "sending" | "sent" | "error" | "rateLimited" | "notConfigured" | "invalid";
 
