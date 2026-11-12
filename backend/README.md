@@ -12,6 +12,7 @@
 | `GET` | `/api/products/<slug>?lang=` | нэг бүтээгдэхүүн |
 | `GET` | `/api/facts` | сайтын тоон баримтууд (`since`, `mineralCount`, `additives`) |
 | `POST` | `/api/contact` | маягтын зурвас (JSON: `name`, `email` эсвэл `phone`, `message`, `locale`) |
+| `*` | `/api/admin/…` | админ: `login`, `logout`, `me`, `password`, `messages`, `products`, `facts` ([admin.py](src/khujirt_api/admin.py)) |
 
 Хамгаалалт: honeypot талбар, IP тус бүрээр хязгаар (анхдагч 5 зурвас / цаг; IP-г Vercel-ийн `x-real-ip`-ээс авна),
 IP-г хадгалахгүй — зөвхөн давсалсан hash, алдааны дэлгэрэнгүйг гадагш гаргахгүй.
@@ -23,7 +24,7 @@ api/index.py                 Vercel Python функц: хүсэлт → khujirt_
 requirements.txt             psycopg (зөвхөн Postgres хувилбарт)
 vercel.json                  функцэд backend/src, backend/postgres-ийг багтаана
 backend/
-├── migrations/              D1 schema (wrangler): 0001 хүснэгт, 0002 бүтээгдэхүүн, 0003 хэмжээ — khujirt-db-д хийгдсэн
+├── migrations/              D1 schema (wrangler): 0001 хүснэгт, 0002 бүтээгдэхүүн, 0003 хэмжээ, 0004 админ — khujirt-db-д хийгдсэн
 ├── src/khujirt_api/
 │   ├── app.py               маршрут, шалгалт, CORS — цэвэр Python
 │   ├── d1_http.py           D1 HTTP API adapter (Vercel → khujirt-db)
@@ -61,6 +62,16 @@ CLOUDFLARE_API_TOKEN=… python3 backend/dev_server.py             # http://127.
 cd backend
 python -m pytest                                                  # SQLite + D1 HTTP (fake)
 KHUJIRT_TEST_DATABASE_URL=postgresql://…/scratch python -m pytest # + Postgres (баазыг тест бүрт цэвэрлэнэ!)
+```
+
+## Админ
+
+Сайтын `/admin` хуудас эдгээр API-г ашиглана. Хэрэглэгчид `admin_users` хүснэгтэд PBKDF2-SHA256 hash-аар хадгалагдана
+(repo-д нууц үг, hash байхгүй). Шинэ хэрэглэгч эсвэл нууц үг сэргээх:
+
+```bash
+python3 backend/admin_user.py admin        # нууц үгийг асууна, SQL хэвлэнэ
+npx wrangler d1 execute khujirt-db --remote --command "<хэвлэсэн SQL>"
 ```
 
 ## Өгөгдөл засах

@@ -10,6 +10,7 @@ Routes
   GET  /api/products/<slug>     one product
   GET  /api/facts               headline numbers
   POST /api/contact             store a contact-form message (JSON)
+  *    /api/admin/...            admin area (see admin.py)
 """
 
 from __future__ import annotations
@@ -279,6 +280,10 @@ async def _route(req: Request, db: Database, settings: Settings, now: float) -> 
         result = _allow(method, ("GET", "HEAD"), lambda: get_facts(db))
     elif path == "/api/contact":
         result = _allow(method, ("POST",), lambda: create_contact(req, db, settings, now))
+    elif path == "/api/admin" or path.startswith("/api/admin/"):
+        from .admin import route as admin_route
+
+        return await admin_route(req, db, settings, int(now))
     else:
         return _error(404, "not_found")
 
@@ -298,8 +303,8 @@ def _apply_headers(resp: Response, req: Request, settings: Settings) -> None:
     headers["vary"] = "Origin"
 
     origin = req.headers.get("origin", "").rstrip("/")
-    if not origin:
-        return
+    if not origin or req.path.startswith("/api/admin"):
+        return  # the admin area is same-origin only: no CORS headers at all
     if req.path.rstrip("/") == "/api/contact":
         if origin in settings.allowed_origins:
             headers["access-control-allow-origin"] = origin

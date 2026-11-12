@@ -28,7 +28,7 @@ from khujirt_api.app import MAX_BODY_BYTES  # noqa: E402
 from khujirt_api.d1_http import D1Http, d1_token  # noqa: E402
 
 MIGRATIONS = ROOT / "backend" / "postgres"
-HEADERS = ("content-type", "origin", "user-agent", "x-real-ip", "x-forwarded-for", "x-proxy-key")
+HEADERS = ("content-type", "origin", "user-agent", "x-real-ip", "x-forwarded-for", "x-proxy-key", "cookie", "host", "x-forwarded-host")
 ENTRY_PATHS = ("/api", "/api/index", "/api/index.py")
 
 

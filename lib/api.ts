@@ -6,7 +6,7 @@ import type { Locale } from "./i18n";
  * Where the Python API answers: an explicit KHUJIRT_API_URL, else this site's own /api on Vercel
  * (the production domain in production, the deployment's own address in previews).
  */
-function apiBase() {
+export function apiBase() {
   if (process.env.KHUJIRT_API_URL) return process.env.KHUJIRT_API_URL;
   const host =
     process.env.VERCEL_ENV === "production" ? process.env.VERCEL_PROJECT_PRODUCTION_URL : process.env.VERCEL_URL;
