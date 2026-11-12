@@ -2,6 +2,7 @@ name = "khujirt-api"
 main = "src/entry.py"
 compatibility_date = "2026-10-01"
 compatibility_flags = ["python_workers"]
+account_id = "edac0cf05840fa04d320871518924587"
 
 [vars]
 # Browser origins allowed to call POST /api/contact (the site's contact form posts here directly).

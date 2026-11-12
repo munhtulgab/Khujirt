@@ -119,7 +119,7 @@ def test_migrations_run_once_and_match_d1():
 
 @pytest.fixture
 def d1_server(monkeypatch):
-    """The function as configured on Vercel for D1: only the token is set, plus the stand-in API address."""
+    """The function as configured on Vercel for D1: only the token is set (account and database are the defaults)."""
     fake = FakeD1(accounts=("other-account", ACCOUNT))
     import khujirt_api.d1_http as d1_http
 
@@ -136,8 +136,8 @@ def test_function_on_d1(d1_server):
     base, fake = d1_server
     status, data, _ = fetch(base, "/api/health")
     assert status == 200 and data == {"ok": True, "service": "khujirt-api", "database": "ok", "engine": "d1", "products": 6}
-    # the account was found from the token: the one of two that holds khujirt-db
-    assert ("GET", "/client/v4/accounts?per_page=50") in fake.requests
+    # Khujirt's account is built in: no lookup
+    assert not any(path.startswith("/client/v4/accounts?") for _, path in fake.requests)
 
     status, data, _ = fetch(base, "/api/?_path=products&lang=mn")
     assert status == 200 and [p["slug"] for p in data["products"]][:2] == ["khujirt", "khujirt-bombolog"]
@@ -239,12 +239,20 @@ def test_d1_health_reasons(monkeypatch, env, reason):
         fake.stop()
 
 
-def test_d1_token_that_cannot_list_accounts(monkeypatch):
-    base, fake, httpd = _d1_entry(monkeypatch, {"CLOUDFLARE_API_TOKEN": TOKEN})
-    fake.accounts = []  # what a token limited to D1 sees
+def test_d1_account_lookup_without_a_built_in_account():
+    import asyncio
+
+    from khujirt_api.d1_http import D1Http, D1HttpError
+
+    fake = FakeD1(accounts=("other-account", ACCOUNT))
     try:
-        health = fetch(base, "/api/health")[1]
-        assert health["database"] == "error" and health["reason"] == "account_id_needed"
+        d1 = D1Http(TOKEN, api=fake.api)  # no account: ask the token, pick the one that holds the database
+        assert asyncio.run(d1.all("SELECT COUNT(*) AS n FROM products"))[0]["n"] == 6
+        assert ("GET", "/client/v4/accounts?per_page=50") in fake.requests
+
+        fake.accounts = []  # what a token limited to D1 sees
+        with pytest.raises(D1HttpError) as err:
+            asyncio.run(D1Http(TOKEN, api=fake.api).all("SELECT 1"))
+        assert err.value.reason == "account_id_needed"
     finally:
-        httpd.shutdown()
         fake.stop()

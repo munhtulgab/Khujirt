@@ -64,7 +64,7 @@ Python API нь сайттай нэг Vercel төсөлд ажиллана: `/ap
 2. Vercel → **khujirt** → Settings → **Environment Variables** → `CLOUDFLARE_API_TOKEN` = тэр token (Production, Preview) → Save → **Redeploy**.
 
 Шалгах: `https://khujirt.vercel.app/api/health` → `"database": "ok", "engine": "d1", "products": 6`.
-Cloudflare account-ийг token-оос өөрөө олно; олдохгүй бол `CLOUDFLARE_ACCOUNT_ID`-г нэмнэ.
+Cloudflare account (`edac0cf0…`) болон `khujirt-db`-ийн ID кодонд бичигдсэн; өөр бол `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`.
 
 Хүсвэл (`.env.example`): `IP_HASH_SALT`, `KHUJIRT_API_URL` — өөр API, `NEXT_PUBLIC_SITE_URL` — өөр домэйн (ж: `https://khujirt.mn`).
 

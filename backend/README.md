@@ -43,7 +43,7 @@ backend/
    → Permissions: **Account · D1 · Edit** → Account Resources: өөрийн account → **Create Token**.
 2. Vercel → **khujirt** → Settings → **Environment Variables** → `CLOUDFLARE_API_TOKEN` (Production, Preview) → **Redeploy**.
 
-Account-ийг token-оос өөрөө олно (хэд байвал `khujirt-db` байгааг нь); эс бөгөөс `CLOUDFLARE_ACCOUNT_ID`.
+Account ID (`edac0cf05840fa04d320871518924587`) болон `khujirt-db`-ийн ID кодонд бичигдсэн тул зөвхөн token хэрэгтэй; өөр бол `CLOUDFLARE_ACCOUNT_ID`.
 Өөр D1 бааз бол `D1_DATABASE_ID`. Шалгах: `https://khujirt.vercel.app/api/health` → `{"database": "ok", "engine": "d1", "products": 6}`.
 
 D1 schema-г wrangler-аар удирдана: шинэ `backend/migrations/0004_….sql` → `npx wrangler d1 migrations apply khujirt-db --remote`.

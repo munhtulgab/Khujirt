@@ -2,9 +2,9 @@
 
     POST /client/v4/accounts/{account}/d1/database/{database}/query   {"sql": "...", "params": [...]}
 
-Needs an API token with the Account · D1 · Edit permission. The account is taken from
-CLOUDFLARE_ACCOUNT_ID or, when that is not set, found by asking which accounts the token can
-use and picking the one that holds the database. Standard library only.
+Needs an API token with the Account · D1 · Edit permission (CLOUDFLARE_API_TOKEN). The account
+and database default to Khujirt's own; CLOUDFLARE_ACCOUNT_ID / D1_DATABASE_ID override them. With an
+empty account the token is asked which accounts it can use. Standard library only.
 """
 
 from __future__ import annotations
@@ -18,7 +18,9 @@ from typing import Any, Callable, Optional
 log = logging.getLogger("khujirt_api")
 
 API = "https://api.cloudflare.com/client/v4"
-# khujirt-db (see backend/wrangler.toml); not a secret.
+# Khujirt's Cloudflare account and its khujirt-db database (see backend/wrangler.toml). Not secrets:
+# without a token that may use them they give no access.
+DEFAULT_ACCOUNT_ID = "edac0cf05840fa04d320871518924587"
 DEFAULT_DATABASE_ID = "a748e6df-ddbf-4111-a723-f9c836cbf3e7"
 TOKEN_VARIABLES = ("CLOUDFLARE_D1_TOKEN", "CLOUDFLARE_API_TOKEN")
 
@@ -73,7 +75,7 @@ class D1Http:
         return cls(
             token,
             database_id=(get("D1_DATABASE_ID") or "").strip(),
-            account_id=(get("CLOUDFLARE_ACCOUNT_ID") or "").strip(),
+            account_id=(get("CLOUDFLARE_ACCOUNT_ID") or "").strip() or DEFAULT_ACCOUNT_ID,
             **kwargs,
         )
 

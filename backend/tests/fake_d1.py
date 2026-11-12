@@ -9,7 +9,7 @@ from pathlib import Path
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "migrations"
 TOKEN = "test-d1-token"
-ACCOUNT = "acc0123456789"
+ACCOUNT = "edac0cf05840fa04d320871518924587"  # the default in d1_http
 DATABASE = "a748e6df-ddbf-4111-a723-f9c836cbf3e7"
 
 
