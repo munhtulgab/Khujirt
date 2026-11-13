@@ -204,3 +204,14 @@
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+/* The full legend: a storyteller's drop cap on the first paragraph */
+.legend-text > p:first-child::first-letter {
+  float: left;
+  margin: 0.08em 0.12em 0 0;
+  font-family: var(--font-serif);
+  font-size: 3.6em;
+  font-style: italic;
+  line-height: 0.82;
+  color: var(--color-sky);
+}

@@ -24,7 +24,7 @@ function rockGeometry(seed: number) {
   const colors = new Float32Array(pos.count * 3);
   const stone = new THREE.Color("#77736d");
   const light = new THREE.Color("#9a958d");
-  const moss = new THREE.Color("#56663a");
+  const moss = new THREE.Color("#6b6a3a");
   const c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) {
     const n = noise2(pos.getX(i) * 2.2 + seed, pos.getZ(i) * 2.2) * 0.5 + 0.5;
@@ -40,8 +40,8 @@ function rockGeometry(seed: number) {
 function tuftGeometry() {
   const r = rng(99);
   const blades: THREE.BufferGeometry[] = [];
-  const root = new THREE.Color("#25401a");
-  const tip = new THREE.Color("#8fae45");
+  const root = new THREE.Color("#3b3a1a");
+  const tip = new THREE.Color("#c8aa5c");
   for (let i = 0; i < 9; i++) {
     const h = 0.55 + r() * 0.6;
     const w = 0.03 + r() * 0.025;

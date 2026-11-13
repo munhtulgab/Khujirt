@@ -4,7 +4,18 @@ import type { PeakId } from "@/lib/i18n";
  * Shared, mutable story state. GSAP ScrollTrigger tweens these numbers as the page scrolls;
  * the R3F scene reads them every frame. Nothing here causes React re-renders.
  */
-export type StoryKey = "hero" | "wound" | "source" | "heal" | "today" | "facts" | "products" | "contact";
+/** The legend chapters follow the story of the hunter Shunkhlai (see lib/i18n.ts → legend). */
+export type StoryKey =
+  | "hero"
+  | "dawn"
+  | "deer"
+  | "evening"
+  | "springs"
+  | "legacy"
+  | "today"
+  | "facts"
+  | "products"
+  | "contact";
 
 export interface StoryState {
   /** camera position */
@@ -35,20 +46,34 @@ export interface StoryState {
   wound: number;
   /** healing glow (0..1) */
   heal: number;
+  /** steam rising from the hot springs (0..1) */
+  steam: number;
 }
 
 export const STATES: Record<StoryKey, StoryState> = {
-  hero:     { cx: 0.2,  cy: 1.7, cz: 8.4,  lx: 0.25, ly: 1.5, lz: -0.2, shift: 0.17,  my: -0.2,  mist: 1,    reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.35, wound: 0, heal: 0 },
-  wound:    { cx: -3.4, cy: 1.9, cz: 4.4,  lx: 0.5,  ly: 1.7, lz: -1.1, shift: -0.18, my: 0.16,  mist: 0.85, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.5,  wound: 1, heal: 0 },
-  source:   { cx: 0.6,  cy: 5.5, cz: 18,   lx: 0.5,  ly: 9.5, lz: -40,  shift: 0,     my: 0.1,   mist: 0.5,  reveal: 1, disperse: 0, bottle: 0, peaks: 1, ripple: 1,    wound: 0.4, heal: 0 },
-  heal:     { cx: 3.6,  cy: 1.7, cz: 3.8,  lx: 0.6,  ly: 1.75, lz: -1.1, shift: -0.2, my: 0.16,  mist: 0.32, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.9,  wound: 0, heal: 1 },
-  today:    { cx: 0.2,  cy: 1.7, cz: 8.0,  lx: 0.25, ly: 1.5, lz: -0.2, shift: -0.16, my: 0.12,  mist: 0.22, reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.45, wound: 0, heal: 0 },
-  facts:    { cx: 0.4,  cy: 3.0, cz: 9.6,  lx: 0.4,  ly: 2.2, lz: -1.5, shift: 0,     my: 0,     mist: 0.15, reveal: 0, disperse: 1, bottle: 0, peaks: 0, ripple: 0.7,  wound: 0, heal: 0 },
-  products: { cx: 0.6,  cy: 3.6, cz: 12,   lx: 0.4,  ly: 2.6, lz: -2,   shift: 0,     my: 0,     mist: 0.1,  reveal: 0, disperse: 1, bottle: 0, peaks: 0, ripple: 0.4,  wound: 0, heal: 0 },
-  contact:  { cx: 0.2,  cy: 2.0, cz: 9.2,  lx: 0.3,  ly: 1.6, lz: -0.6, shift: 0.22,  my: -0.05, mist: 0.4,  reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.5,  wound: 0, heal: 0 },
+  hero:     { cx: 0.2,  cy: 1.7, cz: 8.4,  lx: 0.25, ly: 1.5,  lz: -0.2, shift: 0.17,  my: -0.2, mist: 1,    reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.35, wound: 0,    heal: 0,   steam: 0.7 },
+  // sunrise in the Khangai: the hunter looks over the valley between Shiveet and Gua; steam on the east bank
+  dawn:     { cx: 0.6,  cy: 4.4, cz: 17,   lx: 0.3,  ly: 7.6,  lz: -40,  shift: 0,     my: 0.1,  mist: 0.7,  reveal: 1, disperse: 0, bottle: 0, peaks: 1, ripple: 0.8,  wound: 0.3,  heal: 0,   steam: 1 },
+  // a lame stag rises out of the steam
+  deer:     { cx: -3.4, cy: 1.9, cz: 4.4,  lx: 0.5,  ly: 1.7,  lz: -1.1, shift: -0.18, my: 0.16, mist: 0.85, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.5,  wound: 1,    heal: 0,   steam: 0.85 },
+  // every evening it comes back to the same steaming hollow, limping less
+  evening:  { cx: 4.4,  cy: 1.25, cz: 3.4, lx: 0.4,  ly: 1.25, lz: -1.5, shift: -0.18, my: 0.16, mist: 0.7,  reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 0.7,  wound: 0.55, heal: 0.1, steam: 1 },
+  // black mud, and springs welling up warm and hot
+  springs:  { cx: 1.9,  cy: 0.8, cz: 2.6,  lx: 0.9,  ly: 0.4,  lz: -1.6, shift: -0.2,  my: 0.16, mist: 0.45, reveal: 1, disperse: 0, bottle: 0, peaks: 0, ripple: 1,    wound: 0.2,  heal: 0.6, steam: 0.95 },
+  // the trail became a road; the rocky height west of Gua was named Shunkhlai
+  legacy:   { cx: 2.5,  cy: 3.4, cz: 12,   lx: -16,  ly: 17,   lz: -120, shift: -0.14, my: 0.1,  mist: 0.35, reveal: 1, disperse: 0, bottle: 0, peaks: 1, ripple: 0.6,  wound: 0,    heal: 1,   steam: 0.6 },
+  today:    { cx: 0.2,  cy: 1.7, cz: 8.0,  lx: 0.25, ly: 1.5,  lz: -0.2, shift: -0.16, my: 0.12, mist: 0.22, reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.45, wound: 0,    heal: 0,   steam: 0.35 },
+  facts:    { cx: 0.4,  cy: 3.0, cz: 9.6,  lx: 0.4,  ly: 2.2,  lz: -1.5, shift: 0,     my: 0,    mist: 0.15, reveal: 0, disperse: 1, bottle: 0, peaks: 0, ripple: 0.7,  wound: 0,    heal: 0,   steam: 0.2 },
+  products: { cx: 0.6,  cy: 3.6, cz: 12,   lx: 0.4,  ly: 2.6,  lz: -2,   shift: 0,     my: 0,    mist: 0.1,  reveal: 0, disperse: 1, bottle: 0, peaks: 0, ripple: 0.4,  wound: 0,    heal: 0,   steam: 0.15 },
+  contact:  { cx: 0.2,  cy: 2.0, cz: 9.2,  lx: 0.3,  ly: 1.6,  lz: -0.6, shift: 0.22,  my: -0.05, mist: 0.4, reveal: 1, disperse: 0, bottle: 1, peaks: 0, ripple: 0.5,  wound: 0,    heal: 0,   steam: 0.45 },
 };
 
 export const story: StoryState = { ...STATES.hero };
+
+// development only: lets a test script move the camera (removed from production builds)
+if (process.env.NODE_ENV === "development" && typeof window !== "undefined") {
+  (window as unknown as { __story: StoryState }).__story = story;
+}
 
 /** Intro progress: the stag forming out of the lake (0 → 1). */
 export const intro = { form: 0 };

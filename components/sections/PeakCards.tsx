@@ -26,7 +26,7 @@ export default function PeakCards({ peaks }: { peaks: Dictionary["legend"]["peak
             hover.peak = hover.peak === p.id ? null : p.id;
           }}
         >
-          <span className="block font-display text-[14px] font-medium text-navy sm:text-[15px]">{p.name}</span>
+          <span className="block break-words font-display text-[12.5px] font-medium text-navy sm:text-[15px]">{p.name}</span>
           <span className="mt-1 block font-serif text-[14px] italic leading-snug text-sky sm:text-[15px]">{p.epithet}</span>
           <span className="mt-2 hidden text-[13px] leading-snug text-ink-soft sm:block">{p.text}</span>
         </li>

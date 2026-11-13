@@ -3,18 +3,21 @@ import type { PeakId } from "@/lib/i18n";
 import { fbm, noise2, ridged, smoothstep } from "./noise";
 
 /**
- * The valley of the legend as one height function: a still lake in a green meadow, forested
- * slopes rising on both sides and, behind, the snowy ridge with its three summits.
+ * The valley of the legend as one height function, in the middle month of autumn: warm shallows in
+ * a meadow of golden grass, slopes of larch and spruce rising on both sides and, behind, the snowy
+ * ridge: Gua in the middle, Shiveet to the east and, on Gua's western shoulder, the rocky crag of
+ * Shunkhlai, named after the hunter of the legend.
  * Everything that sits on the ground (trees, rocks, grass, the summit labels) samples it.
  */
 
 export const LAKE = { cx: 2, cz: -16, rx: 15, rz: 25 };
 
-/** The three sacred mountains of the legend, on the far ridge (x, z, peak height, spread). */
-export const NAMED_PEAKS: { id: PeakId; x: number; z: number; h: number; s: number }[] = [
-  { id: "shunkhlai", x: -40, z: -130, h: 35, s: 13 },
-  { id: "gua", x: 4, z: -146, h: 42, s: 15 },
-  { id: "shiveet", x: 44, z: -128, h: 34, s: 13 },
+/** The three mountains of the legend, on the far ridge (x, z, peak height, spread, crags). */
+export const NAMED_PEAKS: { id: PeakId; x: number; z: number; h: number; s: number; crag: number }[] = [
+  // "Гуа уулын баруун сэрвэн хадтай өндөрлөг": the rocky height on Gua's western side
+  { id: "shunkhlai", x: -27, z: -138, h: 34, s: 9.5, crag: 1 },
+  { id: "gua", x: 4, z: -146, h: 42, s: 15, crag: 0 },
+  { id: "shiveet", x: 44, z: -128, h: 34, s: 13, crag: 0 },
 ];
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -53,8 +56,10 @@ export function heightAt(x: number, z: number): number {
       const dx = x - p.x;
       const dz = (z - p.z) * 0.85;
       const g = Math.exp(-(dx * dx + dz * dz) / (2 * p.s * p.s));
-      // a pointed summit carved by ridges
-      mount = Math.max(mount, p.h * Math.pow(g, 0.85) * (0.72 + 0.4 * ridged(x * 0.028 + p.x, z * 0.028, 4)));
+      // a pointed summit carved by ridges; Shunkhlai is a ragged crest of rock towers
+      let peak = p.h * Math.pow(g, 0.85) * (0.72 + 0.4 * ridged(x * 0.028 + p.x, z * 0.028, 4));
+      if (p.crag) peak += p.crag * g * (ridged(x * 0.11 + 5.3, z * 0.11 - 2.1, 3) * 7 + ridged(x * 0.24, z * 0.24 + 9, 2) * 2.5 - 3.5);
+      mount = Math.max(mount, peak);
     }
     // gullies, crags and ribs on the high slopes
     const rough = smoothstep(6, 18, mount);
@@ -99,11 +104,11 @@ export const SUMMITS = NAMED_PEAKS.map((p) => {
 
 const C = {
   bed: new THREE.Color("#5f6b55"),
-  wet: new THREE.Color("#34502a"),
-  grassA: new THREE.Color("#5a8a2c"),
-  grassB: new THREE.Color("#93a83e"),
-  forestA: new THREE.Color("#18301c"),
-  forestB: new THREE.Color("#263f24"),
+  wet: new THREE.Color("#3c4426"),
+  grassA: new THREE.Color("#7a7f38"),
+  grassB: new THREE.Color("#b49a4e"),
+  forestA: new THREE.Color("#252a1a"),
+  forestB: new THREE.Color("#3a3520"),
   rockA: new THREE.Color("#4f5156"),
   rockB: new THREE.Color("#78736d"),
   snow: new THREE.Color("#f3f5f7"),

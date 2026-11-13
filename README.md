@@ -1,6 +1,6 @@
 # Хужирт — Байгалийн эрдэст ус
 
-Хужирт брэндийн вэб сайт: нар жаргах үеийн хөндийд, нуурын усан дундаас бүрэлдэх шилэн тунгалаг буга, Хужирт лонх, нарсан ой, цастай Шунхлай · Гуа · Шивээт уулс бүхий 3D түүх. Гүйлгэх тусам домог дөрвөн агшинд өрнөнө: шархадсан буга → гурван уулын дундах эх → эдгэрэл → өнөөдөр. Монгол / англи хэлтэй.
+Хужирт брэндийн вэб сайт: «Өвгөн Шунхлайн домог»-оор өрнөх 3D түүх. Намрын нар мандах үеийн хөндий, халуун булгаас савсах уур, уурын дундаас тодрох шилэн тунгалаг буга, шар шинэс, нарс, цастай Гуа · Шивээт уулс ба Шунхлайн сэрвэн хад, усанд зогсох Хужирт усны бүх 3D сав. Гүйлгэх тусам домог зургаан агшинд өрнөнө: намрын өглөөний уур → доголон буга → үдэш бүр нэг хонхорт → халуун булаг → рашаан → өнөөдөр; домгийг бүтнээр нь ч уншиж болно. Монгол / англи хэлтэй.
 
 ![Хужирт](public/og/og-mn.jpg)
 
@@ -17,10 +17,11 @@ khujirt/
 │   ├── sitemap.ts · robots.ts · manifest.ts · icon.svg · apple-icon.png
 │   └── globals.css                    брэндийн өнгө (@theme), бүрэлдэхүүн
 ├── components/
-│   ├── three/      3D тайз: Deer (шилэн буга), StagParticles (GPU цэгэн буга), Bottle,
-│   │               Lake (тусгал, долгион), Droplets (дусал), Terrain + landscape.ts (уул, нуга),
-│   │               Forest (нарс), Shore (чулуу, өвс), Sky (алтлаг тэнгэр), Mist, CameraRig,
-│   │               story.ts (гүйлгэлтийн төлөв)
+│   ├── three/      3D тайз: Deer (шилэн буга), StagParticles (GPU цэгэн буга),
+│   │               Bottles3D + bottleShape.ts + bottleModel.ts (бүтээгдэхүүний зургаас 3D сав),
+│   │               Steam (халуун булгийн уур), Lake (тусгал, долгион), Droplets (дусал),
+│   │               Terrain + landscape.ts (уул, нуга, Шунхлайн хад), Forest (шинэс, нарс),
+│   │               Shore (чулуу, өвс), Sky (алтлаг тэнгэр), Mist, CameraRig, story.ts (гүйлгэлтийн төлөв)
 │   ├── sections/   Hero, Legend, Facts, Products, Contact
 │   ├── layout/     Header, Footer, SmoothScroll (Lenis)
 │   └── StoryDriver.tsx                ScrollTrigger → 3D түүхийн timeline
@@ -83,7 +84,10 @@ Cloudflare account (`edac0cf0…`) болон `khujirt-db`-ийн ID кодон�
 - Бүтээгдэхүүн: D1 `products` хүснэгт (сайт 10 минут тутамд шинэчилнэ) — нөөц хувилбар `lib/content.ts`
 - Тоон баримт: D1 `facts` хүснэгт (`since`, `mineral_count`, `additives`)
 - Ирсэн зурвас: D1 `contact_messages` хүснэгт (Cloudflare → Storage & Databases → D1 → `khujirt-db` → Console)
-- 3D түүхийн камер, манан, долгион: `components/three/story.ts` → `STATES`
+- 3D түүхийн камер, манан, уур, долгион: `components/three/story.ts` → `STATES`
+- 3D сав: бүтээгдэхүүн бүрийн жинхэнэ зургаас хэлбэр (тойм), таг, етикетийг автоматаар гаргаж 3D-д ороодог
+  (`components/three/bottleShape.ts`). Шилэн савны зураг `public/bottles/`-д, хуванцар савных gem.mn-ээс.
+  Шилэн сав дээр «KHUJIRT» товгор бичиг, хийтэй усанд бөмбөлөг.
 - Хөл хэсгийн уриа: `lib/i18n.ts` → `footer.manifesto`; брэндийн бичлэг: `public/media/khujirt-amlalt.mp4` (дуугүй, зөвхөн дэлгэцэнд харагдах үед тоглоно, постер `khujirt-amlalt.webp`)
 
 Бүтээгдэхүүний зураг, мэдээллийг [gem.mn](https://www.gem.mn/mn/brands/khujirt-gem)-ийн Хужирт хуудаснаас авсан.

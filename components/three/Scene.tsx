@@ -11,9 +11,10 @@ import Droplets from "./Droplets";
 import Forest from "./Forest";
 import Lake from "./Lake";
 import Mist from "./Mist";
-import RealBottles from "./RealBottles";
+import Bottles3D from "./Bottles3D";
 import Shore from "./Shore";
 import Sky from "./Sky";
+import Steam from "./Steam";
 import StagParticles from "./StagParticles";
 import Terrain from "./Terrain";
 import { DEER_POSITION, DEER_ROTATION, STATES, SUN_DIR, intro, pointer } from "./story";
@@ -101,7 +102,8 @@ export default function Scene() {
           <StagParticles />
         </group>
         <Droplets count={quality === "high" ? 44 : 24} />
-        <RealBottles />
+        <Bottles3D />
+        <Steam />
         <Intro reduceMotion={reduceMotion} />
       </Suspense>
       <CameraRig reduceMotion={reduceMotion} />
